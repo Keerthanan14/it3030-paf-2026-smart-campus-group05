@@ -1,5 +1,6 @@
 package com.smartcampus.notification;
 
+import com.smartcampus.auth.MailService;
 import com.smartcampus.notification.dto.NotificationResponse;
 import com.smartcampus.notification.dto.NotificationUpdateResponse;
 import com.smartcampus.notification.dto.PaginatedNotificationResponse;
@@ -9,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,10 +24,18 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final MailService mailService;
 
-    public NotificationServiceImpl(NotificationRepository notificationRepository, UserRepository userRepository) {
+    public NotificationServiceImpl(
+            NotificationRepository notificationRepository, 
+            UserRepository userRepository,
+            SimpMessagingTemplate messagingTemplate,
+            MailService mailService) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
+        this.messagingTemplate = messagingTemplate;
+        this.mailService = mailService;
     }
 
     @Override
@@ -59,7 +69,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
-    public NotificationResponse markAsRead(UUID userId, UUID notificationId) {
+    public NotificationResponse markAsRead(UUID userId, UUID notificationId) {  
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found"));
 
@@ -76,7 +86,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public NotificationUpdateResponse markAllAsRead(UUID userId) {
-        int updatedCount = notificationRepository.markAllAsRead(userId);
+        int updatedCount = notificationRepository.markAllAsRead(userId);        
         return new NotificationUpdateResponse("All notifications marked as read.", updatedCount);
     }
 
@@ -85,21 +95,32 @@ public class NotificationServiceImpl implements NotificationService {
     public void sendBookingNotification(UUID userId, UUID bookingId, boolean approved, String reason) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        
+
         Notification notification = new Notification();
         notification.setUser(user);
         notification.setReferenceId(bookingId);
         notification.setReferenceType(ReferenceType.BOOKING);
-        
+
+        String subject;
+        String textBody;
+
         if (approved) {
             notification.setType(NotificationType.BOOKING_APPROVED);
             notification.setMessage("Your booking has been approved.");
+            
+            subject = "Booking Approved";
+            textBody = "Hello " + user.getName() + ",\n\nYour booking request has been approved.\n\nRegards,\nSmart Campus Team";
         } else {
             notification.setType(NotificationType.BOOKING_REJECTED);
             notification.setMessage("Your booking has been rejected: " + reason);
+            
+            subject = "Booking Rejected";
+            textBody = "Hello " + user.getName() + ",\n\nYour booking request has been rejected.\nReason: " + reason + "\n\nRegards,\nSmart Campus Team";
         }
-        
-        notificationRepository.save(notification);
+
+        notification = notificationRepository.save(notification);
+        pushToWebSocket(notification);
+        mailService.sendEmail(user.getEmail(), subject, textBody);
     }
 
     @Override
@@ -107,15 +128,22 @@ public class NotificationServiceImpl implements NotificationService {
     public void sendTicketStatusNotification(UUID userId, UUID ticketId, String status) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        
+
         Notification notification = new Notification();
         notification.setUser(user);
         notification.setReferenceId(ticketId);
         notification.setReferenceType(ReferenceType.TICKET);
         notification.setType(NotificationType.TICKET_STATUS_CHANGE);
         notification.setMessage("Your ticket status has been updated to " + status + ".");
-        
-        notificationRepository.save(notification);
+
+        notification = notificationRepository.save(notification);
+        pushToWebSocket(notification);
+
+        if ("RESOLVED".equalsIgnoreCase(status) || "CLOSED".equalsIgnoreCase(status)) {
+            String subject = "Ticket Status Updated";
+            String textBody = "Hello " + user.getName() + ",\n\nYour ticket status has been updated to " + status + ".\n\nRegards,\nSmart Campus Team";
+            mailService.sendEmail(user.getEmail(), subject, textBody);
+        }
     }
 
     @Override
@@ -123,15 +151,25 @@ public class NotificationServiceImpl implements NotificationService {
     public void sendNewCommentNotification(UUID ticketOwnerId, UUID ticketId, String commenterName) {
         User user = userRepository.findById(ticketOwnerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        
+
         Notification notification = new Notification();
         notification.setUser(user);
         notification.setReferenceId(ticketId);
         notification.setReferenceType(ReferenceType.TICKET);
         notification.setType(NotificationType.NEW_COMMENT);
         notification.setMessage("A new comment was added to your ticket by " + commenterName + ".");
-        
-        notificationRepository.save(notification);
+
+        notification = notificationRepository.save(notification);
+        pushToWebSocket(notification);
+    }
+    
+    private void pushToWebSocket(Notification notification) {
+        NotificationResponse response = mapToResponse(notification);
+        messagingTemplate.convertAndSendToUser(
+                notification.getUser().getId().toString(),
+                "/queue/notifications",
+                response
+        );
     }
 
     private NotificationResponse mapToResponse(Notification n) {

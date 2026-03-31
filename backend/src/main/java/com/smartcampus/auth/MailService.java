@@ -22,16 +22,16 @@ public class MailService {
 
     public MailService(
             JavaMailSender mailSender,
-            @Value("${app.mail.enabled:false}") boolean mailEnabled,
-            @Value("${app.auth.debug:false}") boolean authDebug,
-            @Value("${app.mail.from:noreply@smartcampus.local}") String fromAddress) {
+            @Value("") boolean mailEnabled,
+            @Value("") boolean authDebug,
+            @Value("") String fromAddress) {
         this.mailSender = mailSender;
         this.mailEnabled = mailEnabled;
         this.authDebug = authDebug;
         this.fromAddress = fromAddress;
     }
 
-    public void sendRegistrationCode(String email, String name, String code) {
+    public void sendRegistrationCode(String email, String name, String code) {  
         String subject = "Smart Campus verification code";
         String body = "Hi " + name + ",\n\n"
                 + "Your verification code is: " + code + "\n"
@@ -47,9 +47,13 @@ public class MailService {
                 + "Role: " + role.name() + "\n"
                 + "Username: " + email + "\n"
                 + "Temporary password: " + temporaryPassword + "\n\n"
-                + "Please log in and change your password immediately.\n\n"
+                + "Please log in and change your password immediately.\n\n"     
                 + "Smart Campus Operations Hub";
-        send(email, subject, body, temporaryPassword, "temporary-password");
+        send(email, subject, body, temporaryPassword, "temporary-password");    
+    }
+
+    public void sendEmail(String to, String subject, String body) {
+        send(to, subject, body, "generic", "generic-email");
     }
 
     private void send(String to, String subject, String body, String debugSecret, String debugType) {
