@@ -1,6 +1,5 @@
 package com.smartcampus.notification;
 
-import com.smartcampus.auth.MailService;
 import com.smartcampus.notification.dto.NotificationResponse;
 import com.smartcampus.notification.dto.NotificationUpdateResponse;
 import com.smartcampus.notification.dto.PaginatedNotificationResponse;
@@ -25,17 +24,17 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    private final MailService mailService;
+    private final EmailService emailService;
 
     public NotificationServiceImpl(
             NotificationRepository notificationRepository, 
             UserRepository userRepository,
             SimpMessagingTemplate messagingTemplate,
-            MailService mailService) {
+            EmailService emailService) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.messagingTemplate = messagingTemplate;
-        this.mailService = mailService;
+        this.emailService = emailService;
     }
 
     @Override
@@ -120,7 +119,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         notification = notificationRepository.save(notification);
         pushToWebSocket(notification);
-        mailService.sendEmail(user.getEmail(), subject, textBody);
+        emailService.sendEmail(user.getEmail(), subject, textBody);
     }
 
     @Override
@@ -142,7 +141,7 @@ public class NotificationServiceImpl implements NotificationService {
         if ("RESOLVED".equalsIgnoreCase(status) || "CLOSED".equalsIgnoreCase(status)) {
             String subject = "Ticket Status Updated";
             String textBody = "Hello " + user.getName() + ",\n\nYour ticket status has been updated to " + status + ".\n\nRegards,\nSmart Campus Team";
-            mailService.sendEmail(user.getEmail(), subject, textBody);
+            emailService.sendEmail(user.getEmail(), subject, textBody);
         }
     }
 

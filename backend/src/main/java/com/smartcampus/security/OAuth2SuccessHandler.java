@@ -62,6 +62,15 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         }
 
         String token = jwtTokenProvider.generateToken(userId, email, role);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(userId);
+
+        // Put the refresh token into an HttpOnly cookie
+        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("refresh_token", refreshToken);
+        cookie.setHttpOnly(true);
+        // cookie.setSecure(true); // Uncomment this in production when using HTTPS
+        cookie.setPath("/api/auth/refresh");
+        cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
+        response.addCookie(cookie);
 
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
                 .queryParam("token", token)

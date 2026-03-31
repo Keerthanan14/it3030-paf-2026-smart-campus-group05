@@ -35,40 +35,40 @@ backend/
 │       │           ├── SmartCampusApiApplication.java        ← Main entry point (@SmartCampusApiApplication)
 │       │           │
 │       │           ├── config/                            ← All configuration classes
-│       │           │   ├── SecurityConfig.java            ← Spring Security + OAuth2 setup
-│       │           │   ├── JwtConfig.java                 ← JWT secret, expiry settings
-│       │           │   ├── WebSocketConfig.java           ← STOMP WebSocket broker config
 │       │           │   ├── CorsConfig.java                ← Allow React (localhost:5173) to call API
-│       │           │   └── FileStorageConfig.java         ← Upload directory configuration
+│       │           │   ├── FileStorageConfig.java         ← Upload directory configuration
+│       │           │   ├── SecurityConfig.java            ← Spring Security + OAuth2 setup
+│       │           │   └── WebSocketConfig.java           ← STOMP WebSocket broker config
 │       │           │
 │       │           ├── security/                          ← Security filters and handlers
+│       │           │   ├── AuthUserPrincipal.java         ← Wraps User entity for Spring Security
+│       │           │   ├── CustomOAuth2UserService.java   ← Handles Google login, creates user
 │       │           │   ├── JwtAuthenticationFilter.java   ← Validates JWT on every request
 │       │           │   ├── JwtTokenProvider.java          ← Generate and parse JWT tokens
-│       │           │   ├── OAuth2UserService.java         ← Handles Google login, creates user
-│       │           │   ├── OAuth2SuccessHandler.java      ← Issues JWT after OAuth2 success
-│       │           │   └── UserPrincipal.java             ← Wraps User entity for Spring Security
+│       │           │   └── OAuth2SuccessHandler.java      ← Issues JWT after OAuth2 success
 │       │           │
 │       │           ├── exception/                         ← Global error handling
-│       │           │   ├── GlobalExceptionHandler.java    ← @ControllerAdvice for all errors
-│       │           │   ├── ResourceNotFoundException.java ← Thrown when entity not found (404)
 │       │           │   ├── ConflictException.java         ← Thrown for booking conflicts (409)
+│       │           │   ├── ErrorResponse.java             ← Standard error JSON structure
 │       │           │   ├── ForbiddenException.java        ← Thrown for access denied (403)
-│       │           │   └── ErrorResponse.java             ← Standard error JSON structure
+│       │           │   ├── GlobalExceptionHandler.java    ← @ControllerAdvice for all errors
+│       │           │   └── ResourceNotFoundException.java ← Thrown when entity not found (404)
 │       │           │
 │       │           ├── common/                            ← Shared utilities used by all modules
-│       │           │   ├── BaseEntity.java                ← id, createdAt, updatedAt (all entities extend this)
-│       │           │   └── ApiResponse.java               ← Standard success response wrapper
+│       │           │   ├── ApiResponse.java               ← Standard success response wrapper
+│       │           │   └── BaseEntity.java                ← id, createdAt, updatedAt (all entities extend this)
 │       │           │
 │       │           │
 │       │           ├── user/                              ── MEMBER 4 owns this module
+│       │           │   ├── AuthProvider.java              ← Enum: GOOGLE, LOCAL
+│       │           │   ├── Role.java                      ← Enum: STUDENT, ADMIN, TECHNICIAN
 │       │           │   ├── User.java                      ← JPA Entity
-│       │           │   ├── Role.java                      ← Enum: USER, ADMIN, TECHNICIAN
+│       │           │   ├── UserController.java            ← REST endpoints (/api/users)
 │       │           │   ├── UserRepository.java            ← Spring Data JPA repository
-│       │           │   ├── UserService.java               ← Business logic
-│       │           │   ├── UserController.java            ← REST endpoints (/api/auth/me, etc.)
+│       │           │   ├── UserService.java               ← Business logic interface
+│       │           │   ├── UserServiceImpl.java           ← Business logic implementation
 │       │           │   └── dto/
-│       │           │       ├── UserResponse.java          ← What the API returns
-│       │           │       └── UpdateRoleRequest.java     ← Request body for role change
+│       │           │       └── UserResponse.java          ← What the API returns
 │       │           │
 │       │           ├── resource/                          ── MEMBER 1 owns this module
 │       │           │   ├── Resource.java                  ← JPA Entity
@@ -120,14 +120,18 @@ backend/
 │       │           │       └── CommentResponse.java
 │       │           │
 │       │           ├── notification/                      ── MEMBER 4 owns this module
-│       │           │   ├── Notification.java              ← JPA Entity
-│       │           │   ├── NotificationType.java          ← Enum: BOOKING_APPROVED, etc.
-│       │           │   ├── NotificationRepository.java
-│       │           │   ├── NotificationService.java       ← save + WebSocket push + email
-│       │           │   ├── NotificationController.java    ← REST endpoints + HATEOAS
 │       │           │   ├── EmailService.java              ← Spring Mail + Gmail SMTP
+│       │           │   ├── Notification.java              ← JPA Entity
+│       │           │   ├── NotificationController.java    ← REST endpoints
+│       │           │   ├── NotificationRepository.java    ← Spring Data JPA repository
+│       │           │   ├── NotificationService.java       ← Business logic interface
+│       │           │   ├── NotificationServiceImpl.java   ← Business logic implementation
+│       │           │   ├── NotificationType.java          ← Enum: BOOKING_APPROVED, etc.
+│       │           │   ├── ReferenceType.java             ← Enum to link notifications to objects
 │       │           │   └── dto/
-│       │           │       └── NotificationResponse.java
+│       │           │       ├── NotificationResponse.java
+│       │           │       ├── NotificationUpdateResponse.java
+│       │           │       └── PaginatedNotificationResponse.java
 │       │           │
 │       │           └── audit/                             ── MEMBER 3 owns this module
 │       │               ├── AuditLog.java                  ← JPA Entity

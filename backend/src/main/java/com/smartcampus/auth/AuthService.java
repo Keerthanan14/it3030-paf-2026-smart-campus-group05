@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.smartcampus.notification.EmailService;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -37,7 +38,7 @@ public class AuthService {
     private final RegistrationVerificationCodeRepository verificationCodeRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
-    private final MailService mailService;
+    private final EmailService emailService;
     private final long jwtExpirationMs;
     private final long verificationCodeTtlMinutes;
 
@@ -46,14 +47,14 @@ public class AuthService {
             RegistrationVerificationCodeRepository verificationCodeRepository,
             JwtTokenProvider jwtTokenProvider,
             PasswordEncoder passwordEncoder,
-            MailService mailService,
+            EmailService emailService,
             @Value("${jwt.expiration}") long jwtExpirationMs,
             @Value("${app.auth.verification-code-ttl-minutes:10}") long verificationCodeTtlMinutes) {
         this.userRepository = userRepository;
         this.verificationCodeRepository = verificationCodeRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
-        this.mailService = mailService;
+        this.emailService = emailService;
         this.jwtExpirationMs = jwtExpirationMs;
         this.verificationCodeTtlMinutes = verificationCodeTtlMinutes;
     }
@@ -74,7 +75,22 @@ public class AuthService {
         }
 
         String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole());
-        return new AuthTokenResponse(token, "Bearer", jwtExpirationMs / 1000);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
+        return new AuthTokenResponse(token, "Bearer", jwtExpirationMs / 1000, refreshToken);
+    }
+    
+    @Transactional(readOnly = true)
+    public AuthTokenResponse refreshToken(String refreshToken) {
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+        }
+        
+        java.util.UUID userId = jwtTokenProvider.extractUserId(refreshToken);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+                
+        String newAccessToken = jwtTokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole());
+        return new AuthTokenResponse(newAccessToken, "Bearer", jwtExpirationMs / 1000, null);
     }
 
     @Transactional
@@ -98,7 +114,7 @@ public class AuthService {
         codeRecord.setUsed(false);
         verificationCodeRepository.save(codeRecord);
 
-        mailService.sendRegistrationCode(email, name, code);
+        emailService.sendRegistrationCode(email, name, code);
         return new MessageResponse("Verification code sent.");
     }
 
@@ -133,7 +149,7 @@ public class AuthService {
         User user = new User();
         user.setEmail(email);
         user.setName(codeRecord.getName());
-        user.setRole(Role.USER);
+        user.setRole(Role.STUDENT);
         user.setAuthProvider(AuthProvider.LOCAL);
         user.setEmailVerified(true);
         user.setForcePasswordChange(false);
@@ -226,7 +242,7 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(temporaryPassword));
         userRepository.save(user);
 
-        mailService.sendStaffTemporaryPassword(email, name, temporaryPassword, role);
+        emailService.sendStaffTemporaryPassword(email, name, temporaryPassword, role);
 
         return new StaffCreateResponse(
                 "Staff account created and credentials sent via email.",

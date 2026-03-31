@@ -12,10 +12,13 @@ import com.smartcampus.auth.dto.StaffCreateResponse;
 import com.smartcampus.auth.dto.VerifyCodeRequest;
 import com.smartcampus.auth.dto.VerifyCodeResponse;
 import com.smartcampus.security.AuthUserPrincipal;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,8 +37,19 @@ public class AuthController {
     }
 
     @PostMapping("/auth/login")
-    public AuthTokenResponse login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
+    public AuthTokenResponse login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+        AuthTokenResponse rawResponse = authService.login(request);
+        
+        // Put the refresh token into an HttpOnly cookie
+        Cookie cookie = new Cookie("refresh_token", rawResponse.refreshToken());
+        cookie.setHttpOnly(true);
+        // cookie.setSecure(true); // Uncomment this in production when using HTTPS
+        cookie.setPath("/api/auth/refresh");
+        cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days in seconds
+        response.addCookie(cookie);
+        
+        // Return JSON without the refresh token to keep it out of local storage
+        return new AuthTokenResponse(rawResponse.accessToken(), rawResponse.tokenType(), rawResponse.expiresIn(), null);
     }
 
     @PostMapping("/auth/register/request-code")
@@ -57,6 +71,14 @@ public class AuthController {
     @GetMapping("/auth/me")
     public AuthMeResponse me(@AuthenticationPrincipal AuthUserPrincipal principal) {
         return authService.me(principal);
+    }
+    
+    @PostMapping("/auth/refresh")
+    public AuthTokenResponse refreshToken(@CookieValue(name = "refresh_token", required = false) String refreshToken) {
+        if (refreshToken == null) {
+            throw new RuntimeException("No refresh token provided");
+        }
+        return authService.refreshToken(refreshToken);
     }
 
     @PostMapping("/auth/logout")

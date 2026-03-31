@@ -57,7 +57,7 @@ public class User {
             id = UUID.randomUUID();
         }
         if (role == null) {
-            role = Role.USER;
+            role = Role.STUDENT;
         }
         if (authProvider == null) {
             authProvider = AuthProvider.LOCAL;

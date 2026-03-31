@@ -1,4 +1,4 @@
-package com.smartcampus.auth;
+package com.smartcampus.notification;
 
 import com.smartcampus.user.Role;
 import org.slf4j.Logger;
@@ -11,16 +11,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
-public class MailService {
+public class EmailService {
 
-    private static final Logger log = LoggerFactory.getLogger(MailService.class);
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
     private final JavaMailSender mailSender;
     private final boolean mailEnabled;
     private final boolean authDebug;
     private final String fromAddress;
 
-    public MailService(
+    public EmailService(
             JavaMailSender mailSender,
             @Value("") boolean mailEnabled,
             @Value("") boolean authDebug,

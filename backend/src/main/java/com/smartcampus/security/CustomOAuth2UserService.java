@@ -51,7 +51,7 @@ public class CustomOAuth2UserService implements org.springframework.security.oau
                     created.setEmail(email);
                     created.setName(name != null ? name : email);
                     created.setProfilePicture(picture);
-                    created.setRole(Role.USER);
+                    created.setRole(Role.STUDENT);
                     created.setAuthProvider(AuthProvider.GOOGLE);
                     created.setEmailVerified(true);
                     created.setForcePasswordChange(false);
