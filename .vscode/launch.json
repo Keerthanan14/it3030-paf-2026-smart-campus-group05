@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Run Spring Boot (Backend)",
+            "request": "launch",
+            "mainClass": "com.smartcampus.SmartCampusApiApplication",
+            "projectName": "smart-campus-api",
+            "cwd": "${workspaceFolder}/backend",
+            "envFile": "${workspaceFolder}/backend/.env",
+            "args": ""
+        }
+    ]
+}

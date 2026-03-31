@@ -11,7 +11,7 @@
 | --------------------------- | ----------------------------------------------------------------------- |
 | Modules Owned               | Module D — Notifications + Module E — Authentication & Authorization  |
 | Additional Features         | Real-time WebSocket Notifications + Email Notifications + Dark Mode     |
-| Total Endpoints             | 6 REST endpoints + 1 WebSocket endpoint                                 |
+| Total Endpoints             | 10 REST endpoints + 1 WebSocket endpoint                                |
 | Frontend Pages / Components | 6 components                                                            |
 | Viva Readiness              | Must explain OAuth2 flow, JWT, WebSocket, email setup, role enforcement |
 
@@ -46,9 +46,10 @@ Because authentication is foundational, you should have the **OAuth 2.0 + JWT se
 | FR-E05 | JWT token is used as Bearer token in all subsequent API requests                                    | Must Have |
 | FR-E06 | JWT tokens expire after 24 hours. Expired tokens return 401.                                        | Must Have |
 | FR-E07 | All REST API endpoints require a valid JWT token (except the OAuth callback endpoints)              | Must Have |
-| FR-E08 | Admin can change a user's role (USER / ADMIN / TECHNICIAN)                                          | Must Have |
+| FR-E08 | Admin creates staff accounts with role = ADMIN or TECHNICIAN only                                    | Must Have |
 | FR-E09 | React frontend routes are protected — unauthenticated users redirected to /login                   | Must Have |
 | FR-E10 | After logout, the JWT token is invalidated (or frontend clears it and redirects to login)           | Must Have |
+| FR-E11 | Normal USER registration requires email verification code before password setup                       | Must Have |
 
 ### 2.2 In-App Notifications (Module D)
 
@@ -151,6 +152,10 @@ Understanding this flow is critical for the viva. Here is the complete login seq
 | name            | VARCHAR(255) | NOT NULL               | From Google profile       |
 | profile_picture | TEXT         | NULLABLE               | Google profile photo URL  |
 | role            | ENUM         | NOT NULL, DEFAULT USER | USER / ADMIN / TECHNICIAN |
+| password_hash   | VARCHAR(255) | NULLABLE               | For local/password login accounts |
+| auth_provider   | VARCHAR(30)  | NOT NULL, DEFAULT LOCAL | LOCAL / GOOGLE |
+| email_verified  | BOOLEAN      | NOT NULL, DEFAULT false | Required for normal registration flow |
+| force_password_change | BOOLEAN | NOT NULL, DEFAULT false | true for admin-created staff temporary password |
 | created_at      | TIMESTAMP    | NOT NULL               |                           |
 | updated_at      | TIMESTAMP    | NOT NULL               |                           |
 
@@ -227,6 +232,84 @@ All endpoints prefixed with `/api`. JWT Bearer token required except auth endpoi
 * Better approach: maintain a Set of revoked token IDs (jti claim) in memory or Redis, check it in the filter
 
 For the assignment, the simple approach is acceptable.
+
+---
+
+### POST /api/auth/login
+
+**Purpose:** Authenticates a user with email + password and returns JWT.
+
+**Auth required:** Public
+
+**Success Response:** `200 OK`
+
+```
+{
+  "accessToken": "JWT_TOKEN_HERE",
+  "tokenType": "Bearer",
+  "expiresIn": 86400
+}
+```
+
+---
+
+### POST /api/auth/register/request-code
+
+**Purpose:** Starts normal USER registration by sending a verification code to email.
+
+**Auth required:** Public
+
+**Success Response:** `200 OK`
+
+```
+{ "message": "Verification code sent." }
+```
+
+---
+
+### POST /api/auth/register/verify-code
+
+**Purpose:** Verifies the email code for registration.
+
+**Auth required:** Public
+
+**Success Response:** `200 OK`
+
+```
+{ "verified": true }
+```
+
+---
+
+### POST /api/auth/register/set-password
+
+**Purpose:** Completes USER registration and sets the account password.
+
+**Auth required:** Public
+
+**Success Response:** `201 Created`
+
+```
+{ "message": "Account created successfully." }
+```
+
+---
+
+### POST /api/admin/users/staff
+
+**Purpose:** Admin creates staff account (ADMIN or TECHNICIAN), system generates temporary password and sends credentials via SMTP.
+
+**Auth required:** ADMIN only
+
+**Success Response:** `201 Created`
+
+```
+{
+  "message": "Staff account created and credentials sent via email.",
+  "email": "staff@smartcampus.com",
+  "role": "TECHNICIAN"
+}
+```
 
 ---
 
@@ -510,16 +593,17 @@ On logout:
 
 ---
 
-### 9.4 Admin — User Role Management
+### 9.4 Admin — Staff Provisioning
 
 **Route:** `/admin/users`
 
 **What it shows:**
 
-* Table of all registered users
-* Columns: Profile picture, Name, Email, Role, Joined
-* Role dropdown per user — Admin can change to USER / ADMIN / TECHNICIAN
-* Changing role calls `PATCH /api/users/{id}/role` (this endpoint can be under auth or a separate admin endpoint — define it cleanly)
+* Staff creation form (name, email, role)
+* Role options restricted to ADMIN / TECHNICIAN
+* Staff list with role and account status
+* Submitting form calls `POST /api/admin/users/staff`
+* Backend emails username (email) + temporary password to created staff user
 
 ---
 
@@ -569,6 +653,8 @@ This is what your Spring Security configuration must achieve:
 ```
 /oauth2/**             → OAuth2 login flow
 /login/oauth2/**       → OAuth2 callback
+/api/auth/login        → Local login
+/api/auth/register/**  → Verification + password setup flow
 /ws/**                 → WebSocket (JWT validated in handshake separately)
 ```
 

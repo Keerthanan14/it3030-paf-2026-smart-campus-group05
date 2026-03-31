@@ -1,0 +1,280 @@
+﻿{
+  "info": {
+    "_postman_id": "7db77f68-b6c4-48ec-bd44-fce59ea8a662",
+    "name": "SmartCampus Phase 2 Auth",
+    "description": "Phase 2 auth flow: register, verify, set password, login, me, logout, admin staff create.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "host", "value": "localhost" },
+    { "key": "port", "value": "8080" },
+    { "key": "jwtToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "testUserName", "value": "Test User" },
+    { "key": "testUserEmail", "value": "phase2.test@example.com" },
+    { "key": "testUserPassword", "value": "Pass@12345" },
+    { "key": "verificationCode", "value": "" },
+    { "key": "staffName", "value": "Tech Staff" },
+    { "key": "staffEmail", "value": "tech.staff@example.com" },
+    { "key": "staffRole", "value": "TECHNICIAN" }
+  ],
+  "item": [
+    {
+      "name": "Auth - Request Registration Code",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{testUserName}}\",\n  \"email\": \"{{testUserEmail}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://{{host}}:{{port}}/api/auth/register/request-code",
+          "protocol": "http",
+          "host": ["{{host}}"],
+          "port": "{{port}}",
+          "path": ["api", "auth", "register", "request-code"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Verify Registration Code",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{testUserEmail}}\",\n  \"code\": \"{{verificationCode}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://{{host}}:{{port}}/api/auth/register/verify-code",
+          "protocol": "http",
+          "host": ["{{host}}"],
+          "port": "{{port}}",
+          "path": ["api", "auth", "register", "verify-code"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Code verification successful', function () {",
+              "  pm.expect(pm.response.json().verified).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Set Registration Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{testUserEmail}}\",\n  \"code\": \"{{verificationCode}}\",\n  \"password\": \"{{testUserPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://{{host}}:{{port}}/api/auth/register/set-password",
+          "protocol": "http",
+          "host": ["{{host}}"],
+          "port": "{{port}}",
+          "path": ["api", "auth", "register", "set-password"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Login (User)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{testUserEmail}}\",\n  \"password\": \"{{testUserPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://{{host}}:{{port}}/api/auth/login",
+          "protocol": "http",
+          "host": ["{{host}}"],
+          "port": "{{port}}",
+          "path": ["api", "auth", "login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Token returned', function () {",
+              "  var res = pm.response.json();",
+              "  pm.expect(res.accessToken).to.be.a('string').and.not.empty;",
+              "  pm.collectionVariables.set('jwtToken', res.accessToken);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Me",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+        ],
+        "url": {
+          "raw": "http://{{host}}:{{port}}/api/auth/me",
+          "protocol": "http",
+          "host": ["{{host}}"],
+          "port": "{{port}}",
+          "path": ["api", "auth", "me"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+        ],
+        "url": {
+          "raw": "http://{{host}}:{{port}}/api/auth/logout",
+          "protocol": "http",
+          "host": ["{{host}}"],
+          "port": "{{port}}",
+          "path": ["api", "auth", "logout"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin - Create Staff User",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{staffName}}\",\n  \"email\": \"{{staffEmail}}\",\n  \"role\": \"{{staffRole}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://{{host}}:{{port}}/api/admin/users/staff",
+          "protocol": "http",
+          "host": ["{{host}}"],
+          "port": "{{port}}",
+          "path": ["api", "admin", "users", "staff"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
