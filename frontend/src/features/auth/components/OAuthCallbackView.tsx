@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import api from '../../../core/api/client';
+import { authApi } from '../../../core/api/authApi';
 import { useAuthStore } from '../../../core/store/authStore';
-import { redirectByRole } from '../utils/redirectByRole';
+import { redirectByRole } from '../../../core/utils/redirectByRole';
 
 export default function OAuthCallbackPage() {
   const navigate = useNavigate();
@@ -32,9 +32,7 @@ export default function OAuthCallbackPage() {
 
       try {
         setStatusMessage('Fetching your profile...');
-        const userResponse = await api.get('/auth/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const userResponse = await authApi.me(token);
 
         setAuth(userResponse.data, token);
         redirectByRole(userResponse.data.role, navigate);

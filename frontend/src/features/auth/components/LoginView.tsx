@@ -5,9 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
-import api from '../../../core/api/client';
+import { authApi } from '../../../core/api/authApi';
 import { useAuthStore } from '../../../core/store/authStore';
-import { redirectByRole } from '../utils/redirectByRole';
+import { redirectByRole } from '../../../core/utils/redirectByRole';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -34,14 +34,12 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     try {
       setServerError('');
-      const response = await api.post('/auth/login', data);
+      const response = await authApi.login(data);
       
       const token = response.data.accessToken;
       
       // After login, fetch user profile
-      const userResponse = await api.get('/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const userResponse = await authApi.me(token);
 
       setAuth(userResponse.data, token);
 

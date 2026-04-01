@@ -1,0 +1,106 @@
+import { useEffect, useRef, useState } from 'react';
+import { Bell, UserCircle } from 'lucide-react';
+import { ThemeToggle } from '../ui/ThemeToggle';
+import type { AuthUser } from '../../../types/auth';
+
+interface NavbarProps {
+  user: AuthUser | null;
+  activeRole: string;
+}
+
+export function Navbar({ user, activeRole }: NavbarProps) {
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const displayName = user?.name || 'Campus User';
+  const profileImage = user?.profilePicture?.trim() || '';
+  const displayEmail = user?.email || 'No email available';
+  const roleLabel = activeRole.charAt(0).toUpperCase() + activeRole.slice(1);
+
+  useEffect(() => {
+    const onDocumentClick = (event: MouseEvent) => {
+      if (!profileMenuRef.current) {
+        return;
+      }
+      if (!profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', onDocumentClick);
+    return () => {
+      document.removeEventListener('mousedown', onDocumentClick);
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-x-0 top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-x-4 border-b border-border bg-background px-4 shadow-sm sm:px-6 lg:px-8">
+      <div className="flex items-center">
+        <span className="text-xl font-bold text-foreground tracking-wide">SmartCampus</span>
+      </div>
+      <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 justify-end">
+        <div className="flex items-center gap-x-4 lg:gap-x-6">
+          <ThemeToggle />
+
+          <button type="button" className="-m-2.5 p-2.5 text-foreground/50 hover:text-foreground/80 relative">
+            <span className="sr-only">View notifications</span>
+            <Bell className="h-6 w-6" aria-hidden="true" />
+            <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-error ring-2 ring-background"></span>
+          </button>
+
+          <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-border" aria-hidden="true" />
+
+          <div ref={profileMenuRef} className="relative flex items-center gap-x-3">
+            <span className="hidden lg:flex lg:items-center text-sm font-semibold leading-6 text-foreground">
+              👋 Welcome, {displayName}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+              className="h-9 w-9 overflow-hidden rounded-full border border-border bg-muted/40 flex items-center justify-center hover:border-primary/50"
+              aria-label="Open profile menu"
+              aria-haspopup="menu"
+              aria-expanded={isProfileMenuOpen}
+            >
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt="User profile"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <UserCircle className="h-7 w-7 text-foreground/60" />
+              )}
+            </button>
+
+            {isProfileMenuOpen && (
+              <div className="absolute right-0 top-12 z-50 w-72 rounded-lg border border-border bg-background p-4 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="h-14 w-14 overflow-hidden rounded-full border border-border bg-muted/40 flex items-center justify-center">
+                    {profileImage ? (
+                      <img
+                        src={profileImage}
+                        alt="User profile"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <UserCircle className="h-10 w-10 text-foreground/60" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
+                    <p className="truncate text-xs text-foreground/70">{displayEmail}</p>
+                    <p className="mt-1 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                      {roleLabel}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

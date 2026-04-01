@@ -1,19 +1,5 @@
 import { create } from 'zustand';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  profilePicture?: string | null;
-}
-
-interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  setAuth: (user: User, token: string) => void;
-  logout: () => void;
-}
+import type { AuthState } from '../../types/auth';
 
 const TOKEN_KEY = import.meta.env.VITE_JWT_STORAGE_KEY || 'access_token';
 

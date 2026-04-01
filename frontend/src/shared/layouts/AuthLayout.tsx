@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { CalendarCheck2, Ticket } from 'lucide-react';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 
-export function SplitAuthLayout() {
+export function AuthLayout() {
   const ringStyleClass = 'auth-ring-ultra-crisp';
 
   return (

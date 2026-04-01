@@ -1,23 +1,23 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { SplitAuthLayout } from './shared/layouts/SplitAuthLayout';
+import { AuthLayout } from './shared/layouts/AuthLayout';
 import { MainLayout } from './shared/layouts/MainLayout';
-import LoginPage from './features/auth/pages/LoginPage';
-import RegisterPage from './features/auth/pages/RegisterPage';
-import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
-import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
-import OAuthCallbackPage from './features/auth/pages/OAuthCallbackPage';
-import AdminDashboardPage from './features/admin/pages/AdminDashboardPage.tsx';
-import StudentDashboardPage from './features/booking/pages/StudentDashboardPage.tsx';
-import TechnicianDashboardPage from './features/ticket/pages/TechnicianDashboardPage.tsx';
-import StudentNotificationsPage from './features/student/pages/StudentNotificationsPage.tsx';
-import StudentSettingsPage from './features/student/pages/StudentSettingsPage.tsx';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import OAuthCallbackPage from './pages/auth/OAuthCallbackPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import StudentDashboardPage from './pages/student/StudentDashboardPage';
+import TechnicianDashboardPage from './pages/technician/TechnicianDashboardPage';
+import StudentNotificationsPage from './pages/student/StudentNotificationsPage';
+import StudentSettingsPage from './pages/student/StudentSettingsPage';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         {/* Public / Auth Routes */}
-        <Route element={<SplitAuthLayout />}>
+        <Route element={<AuthLayout />}>
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/register" element={<RegisterPage />} />
           <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />

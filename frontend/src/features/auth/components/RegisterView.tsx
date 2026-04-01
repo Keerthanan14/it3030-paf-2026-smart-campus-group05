@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import axios from 'axios';
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
-import api from '../../../core/api/client';
+import { authApi } from '../../../core/api/authApi';
+import type { ApiErrorResponse } from '../../../types/api';
 
 // Schemas for the 3 steps
 const step1Schema = z.object({
@@ -51,35 +53,41 @@ export default function RegisterPage() {
       setServerError('');
       const fullName = `${data.firstName.trim()} ${data.lastName.trim()}`.trim();
 
-      await api.post('/auth/register/request-code', {
+      await authApi.requestRegisterCode({
         name: fullName,
         email: data.email,
       });
       setUserData((prev) => ({ ...prev, name: fullName, email: data.email }));
       setStep(2);
-    } catch (err: any) {
-      setServerError(err.response?.data?.message || 'Failed to send verification code. Email might be in use.');
+    } catch (err: unknown) {
+      const message = axios.isAxiosError<ApiErrorResponse>(err)
+        ? err.response?.data?.message
+        : undefined;
+      setServerError(message || 'Failed to send verification code. Email might be in use.');
     }
   };
 
   const onStep2Submit = async (data: Step2Values) => {
     try {
       setServerError('');
-      await api.post('/auth/register/verify-code', {
+      await authApi.verifyRegisterCode({
         email: userData.email,
         code: data.code,
       });
       setUserData((prev) => ({ ...prev, code: data.code }));
       setStep(3);
-    } catch (err: any) {
-      setServerError(err.response?.data?.message || 'Invalid or expired verification code.');
+    } catch (err: unknown) {
+      const message = axios.isAxiosError<ApiErrorResponse>(err)
+        ? err.response?.data?.message
+        : undefined;
+      setServerError(message || 'Invalid or expired verification code.');
     }
   };
 
   const onStep3Submit = async (data: Step3Values) => {
     try {
       setServerError('');
-      await api.post('/auth/register/set-password', {
+      await authApi.setRegisterPassword({
         email: userData.email,
         code: userData.code, // sending code again just in case backend expects it
         password: data.password,
@@ -87,8 +95,11 @@ export default function RegisterPage() {
       
       // Successfully registered => login
       navigate('/auth/login', { replace: true, state: { message: 'Registration successful! You can now log in.' } });
-    } catch (err: any) {
-      setServerError(err.response?.data?.message || 'Failed to set password. Please try again.');
+    } catch (err: unknown) {
+      const message = axios.isAxiosError<ApiErrorResponse>(err)
+        ? err.response?.data?.message
+        : undefined;
+      setServerError(message || 'Failed to set password. Please try again.');
     }
   };
 

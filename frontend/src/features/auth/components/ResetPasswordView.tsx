@@ -3,9 +3,11 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import axios from 'axios';
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
-import api from '../../../core/api/client';
+import { authApi } from '../../../core/api/authApi';
+import type { ApiErrorResponse } from '../../../types/api';
 
 const resetPasswordSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
@@ -44,15 +46,18 @@ export default function ResetPasswordPage() {
     try {
       setServerError('');
       // Adjust with real endpoint
-      await api.post('/auth/reset-password', { 
+      await authApi.resetPassword({ 
         token, 
         password: data.password 
       });
       
       setSuccess(true);
       setTimeout(() => navigate('/auth/login'), 3000);
-    } catch (err: any) {
-      setServerError(err.response?.data?.message || 'The reset link is invalid or expired.');
+    } catch (err: unknown) {
+      const message = axios.isAxiosError<ApiErrorResponse>(err)
+        ? err.response?.data?.message
+        : undefined;
+      setServerError(message || 'The reset link is invalid or expired.');
     }
   };
 

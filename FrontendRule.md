@@ -63,3 +63,70 @@ Always use a service layer for API calls instead of direct usage inside componen
 ## 🧠 Golden Rule
 
 Keep related things together and unrelated things separate.
+
+---
+
+## 🧭 Project Standard (Use This)
+
+Use this structure in this project:
+
+```text
+src/
+	core/
+		api/      -> API client + feature API services
+		hooks/    -> reusable app hooks
+		store/    -> global state (Zustand)
+		utils/    -> pure helper functions
+	types/      -> shared TypeScript contracts only
+	pages/      -> route-level thin pages
+	shared/
+		components/ui/ -> reusable UI components
+		layouts/       -> app/auth layouts
+```
+
+### Where to Put Files
+
+1. `core/api/`
+- HTTP client setup and service functions.
+- Example: authApi, bookingApi.
+
+2. `core/hooks/`
+- Reusable React logic (`useXxx`), no direct page rendering.
+
+3. `core/store/`
+- Global app state used across multiple routes/components.
+
+4. `core/utils/`
+- Pure helper functions, no React state/effects.
+
+5. `types/`
+- Interfaces and types only, no runtime logic.
+
+6. `features/<feature-name>/components/`
+- Feature-specific UI blocks and sections.
+- Keep business logic out of route pages and move it here.
+
+7. `features/<feature-name>/hooks/`
+- Feature-specific reusable hooks.
+- Use this when hook logic is not global enough for `core/hooks`.
+
+8. `features/<feature-name>/services/`
+- Feature-local service wrappers if needed.
+- Prefer `core/api` for shared API clients and shared endpoint access.
+
+9. `pages/`
+- Route wrappers/composition only.
+- Import and compose feature components.
+- Keep API calls and heavy logic out of pages.
+
+10. `shared/components/ui/`
+- Common buttons, inputs, cards, modals used by many features.
+
+11. `shared/layouts/`
+- Top-level layout structures (auth layout, main app layout).
+
+### Keep It Scalable
+
+1. Start folders flat when small.
+2. Create subfolders by domain when files grow (3+ related files).
+3. Prefer feature grouping over technical scattering.

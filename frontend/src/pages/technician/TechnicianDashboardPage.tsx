@@ -1,5 +1,5 @@
 import { Wrench, TicketCheck, AlertTriangle, Timer } from 'lucide-react';
-import { Card } from '../../../shared/components/ui/Card';
+import { Card } from '../../shared/components/ui/Card';
 
 const stats = [
   { label: 'Assigned Tickets', value: '14', icon: Wrench },

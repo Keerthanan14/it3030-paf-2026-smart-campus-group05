@@ -1,5 +1,5 @@
 import { CalendarCheck, Clock3, Ticket, CheckCircle2 } from 'lucide-react';
-import { Card } from '../../../shared/components/ui/Card';
+import { Card } from '../../shared/components/ui/Card';
 
 const stats = [
   { label: 'Upcoming Bookings', value: '3', icon: CalendarCheck },

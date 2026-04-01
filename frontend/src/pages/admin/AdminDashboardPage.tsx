@@ -1,5 +1,5 @@
 import { Building2, CalendarClock, Ticket, Users } from 'lucide-react';
-import { Card } from '../../../shared/components/ui/Card';
+import { Card } from '../../shared/components/ui/Card';
 
 const stats = [
   { label: 'Total Resources', value: '48', icon: Building2 },

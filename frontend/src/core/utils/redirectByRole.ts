@@ -1,4 +1,6 @@
-export function redirectByRole(role: string, navigate: (path: string) => void) {
+import type { UserRole } from '../../types/auth';
+
+export function redirectByRole(role: UserRole, navigate: (path: string) => void) {
   if (role === 'ROLE_ADMIN') {
     navigate('/admin/dashboard');
     return;

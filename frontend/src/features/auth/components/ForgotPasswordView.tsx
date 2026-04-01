@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import axios from 'axios';
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
-import api from '../../../core/api/client';
+import { authApi } from '../../../core/api/authApi';
+import type { ApiErrorResponse } from '../../../types/api';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -52,12 +54,15 @@ export default function ForgotPasswordPage() {
   const sendResetRequest = async (email: string) => {
     try {
       setServerError('');
-      await api.post('/auth/forgot-password', { email });
+      await authApi.forgotPassword({ email });
       setSuccessMessage('If an account matches that email, a password reset link has been sent.');
       setHasSentCode(true);
       setCooldownSeconds(60);
-    } catch (err: any) {
-      setServerError(err.response?.data?.message || 'Unable to process your request at this time.');
+    } catch (err: unknown) {
+      const message = axios.isAxiosError<ApiErrorResponse>(err)
+        ? err.response?.data?.message
+        : undefined;
+      setServerError(message || 'Unable to process your request at this time.');
     }
   };
 
