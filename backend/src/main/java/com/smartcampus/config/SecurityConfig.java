@@ -3,6 +3,7 @@ package com.smartcampus.config;
 import com.smartcampus.security.JwtAuthenticationFilter;
 import com.smartcampus.security.OAuth2SuccessHandler;
 import com.smartcampus.security.CustomOAuth2UserService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,14 +25,17 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomOAuth2UserService oAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final String oauthRedirectUri;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
             CustomOAuth2UserService oAuth2UserService,
-            OAuth2SuccessHandler oAuth2SuccessHandler) {
+            OAuth2SuccessHandler oAuth2SuccessHandler,
+            @Value("${app.oauth2.redirect-uri}") String oauthRedirectUri) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.oAuth2UserService = oAuth2UserService;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+        this.oauthRedirectUri = oauthRedirectUri;
     }
 
     @Bean
@@ -57,6 +61,8 @@ public class SecurityConfig {
                         .anyRequest().permitAll())
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserService))
+                    .failureHandler((request, response, exception) ->
+                        response.sendRedirect(oauthRedirectUri + "?error=oauth_failed"))
                         .successHandler(oAuth2SuccessHandler));
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

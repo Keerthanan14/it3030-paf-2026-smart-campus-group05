@@ -168,126 +168,74 @@ backend/
 ## 🔵 FRONTEND — React + Vite + Tailwind CSS Folder Structure
 
 ```
-frontend/
+src/
+├── main.tsx                      # Entry point 
+├── App.tsx                        # Root component — wraps router + providers
 │
-├── public/
-│   └── favicon.ico
+├── app/                         # Core app setup
+│   ├── router.tsx               # Central route configuration
+│   └── store/                   # Zustand global state
+│       ├── authStore.ts         # User auth + token
+│       └── uiStore.ts           # UI state (theme, loading, modals)
 │
-├── src/
-│   │
-│   ├── main.jsx                          ← Entry point — renders <App />
-│   ├── App.jsx                           ← Root component — routes + theme + auth wrapper
-│   │
-│   ├── assets/                           ← Images, logos, icons
-│   │   └── logo.svg
-│   │
-│   ├── context/                          ← Global React state (shared across all pages)
-│   │   ├── AuthContext.jsx               ← Current user, JWT token, login/logout — MEMBER 4
-│   │   ├── NotificationContext.jsx       ← Unread count, notification list — MEMBER 4
-│   │   └── ThemeContext.jsx              ← Dark / light mode toggle — MEMBER 4
-│   │
-│   ├── hooks/                            ← Custom reusable React hooks
-│   │   ├── useAuth.js                    ← Access AuthContext easily
-│   │   ├── useNotifications.js           ← Access NotificationContext
-│   │   └── useTheme.js                   ← Access ThemeContext
-│   │
-│   ├── services/                         ← All Axios API calls — one file per module
-│   │   ├── api.js                        ← Axios instance with base URL + JWT header
-│   │   ├── authService.js                ← /api/auth/me, logout — MEMBER 4
-│   │   ├── resourceService.js            ← /api/resources — MEMBER 1
-│   │   ├── bookingService.js             ← /api/bookings — MEMBER 2
-│   │   ├── ticketService.js              ← /api/tickets — MEMBER 3
-│   │   └── notificationService.js        ← /api/notifications — MEMBER 4
-│   │
-│   ├── routes/                           ← Route protection wrappers
-│   │   ├── ProtectedRoute.jsx            ← Redirects to /login if not authenticated
-│   │   └── AdminRoute.jsx                ← Redirects if role is not ADMIN
-│   │
-│   ├── layouts/                          ← Page shell components
-│   │   ├── MainLayout.jsx                ← Navbar + Sidebar + page content area
-│   │   └── AuthLayout.jsx                ← Centered card layout for login page
-│   │
-│   ├── components/                       ← Reusable UI components (no page logic)
-│   │   │
-│   │   ├── common/                       ← Generic shared components
-│   │   │   ├── Navbar.jsx                ← Top bar with user avatar + notification bell
-│   │   │   ├── Sidebar.jsx               ← Left navigation links (role-aware)
-│   │   │   ├── NotificationBell.jsx      ← Bell icon + badge + dropdown — MEMBER 4
-│   │   │   ├── DarkModeToggle.jsx        ← Sun/moon icon button — MEMBER 4
-│   │   │   ├── LoadingSpinner.jsx        ← Reusable loading indicator
-│   │   │   ├── ConfirmDialog.jsx         ← Reusable confirmation modal
-│   │   │   ├── StatusBadge.jsx           ← Coloured badge for statuses
-│   │   │   ├── Pagination.jsx            ← Reusable pagination controls
-│   │   │   └── EmptyState.jsx            ← "No results found" illustration + message
-│   │   │
-│   │   ├── resource/                     ── MEMBER 1
-│   │   │   ├── ResourceCard.jsx          ← Single resource display card
-│   │   │   ├── ResourceFilters.jsx       ← Search bar + filter dropdowns
-│   │   │   └── AvailabilityCalendar.jsx  ← FullCalendar.js component
-│   │   │
-│   │   ├── booking/                      ── MEMBER 2
-│   │   │   ├── BookingCard.jsx           ← Single booking row/card
-│   │   │   ├── BookingStatusBadge.jsx    ← Coloured badge per status
-│   │   │   └── RejectModal.jsx           ← Modal with rejection reason input
-│   │   │
-│   │   ├── ticket/                       ── MEMBER 3
-│   │   │   ├── TicketCard.jsx            ← Single ticket display card
-│   │   │   ├── SlaIndicator.jsx          ← SLA badge (green/orange/red)
-│   │   │   ├── ImageUploader.jsx         ← Drag-drop image upload (max 3)
-│   │   │   ├── ImageGallery.jsx          ← Thumbnail gallery with lightbox
-│   │   │   └── CommentSection.jsx        ← Comments list + add comment form
-│   │   │
-│   │   └── notification/                 ── MEMBER 4
-│   │       ├── NotificationItem.jsx      ← Single notification row
-│   │       └── NotificationDropdown.jsx  ← The full dropdown panel
-│   │
-│   ├── pages/                            ← Top-level route pages
-│   │   │
-│   │   ├── auth/                         ── MEMBER 4
-│   │   │   ├── LoginPage.jsx             ← Google Sign-In button page
-│   │   │   └── OAuthCallbackPage.jsx     ← Reads JWT from URL, stores in context
-│   │   │
-│   │   ├── dashboard/
-│   │   │   └── DashboardPage.jsx         ← Home after login (summary cards)
-│   │   │
-│   │   ├── resource/                     ── MEMBER 1
-│   │   │   ├── ResourceListPage.jsx      ← Browse all resources with filters
-│   │   │   ├── ResourceDetailPage.jsx    ← Single resource + book button
-│   │   │   ├── ResourceCalendarPage.jsx  ← Availability calendar view
-│   │   │   └── admin/
-│   │   │       └── ResourceFormPage.jsx  ← Admin create/edit resource form
-│   │   │
-│   │   ├── booking/                      ── MEMBER 2
-│   │   │   ├── BookingFormPage.jsx       ← New booking request form
-│   │   │   ├── MyBookingsPage.jsx        ← User's own bookings list
-│   │   │   ├── BookingDetailPage.jsx     ← Single booking detail
-│   │   │   └── admin/
-│   │   │       └── AdminBookingsPage.jsx ← Admin approve/reject panel + export
-│   │   │
-│   │   ├── ticket/                       ── MEMBER 3
-│   │   │   ├── CreateTicketPage.jsx      ← New ticket form with image upload
-│   │   │   ├── MyTicketsPage.jsx         ← User's own tickets list
-│   │   │   ├── TicketDetailPage.jsx      ← Full ticket + SLA + comments
-│   │   │   └── admin/
-│   │   │       └── AdminTicketsPage.jsx  ← Admin manage tickets panel
-│   │   │
-│   │   ├── notification/                 ── MEMBER 4
-│   │   │   └── NotificationsPage.jsx     ← Full notifications list page
-│   │   │
-│   │   └── admin/                        ── MEMBER 4
-│   │       ├── UserManagementPage.jsx    ← Admin change user roles
-│   │       └── AuditLogPage.jsx          ← Admin audit log table
-│   │
-│   └── utils/                            ← Helper functions
-│       ├── formatDate.js                 ← Format dates nicely ("April 20, 2026")
-│       ├── formatTime.js                 ← Format times ("09:00 AM")
-│       ├── formatSla.js                  ← Convert minutes to "2h 15m"
-│       └── constants.js                  ← API base URL, role names, status lists
+├── assets/                      # Static files
+│   └── images/
+│       └── logo.svg             # App logo
+│
+├── shared/                      # Reusable global logic
+│   ├── components/              # Buttons, Navbar, Modals, Spinner, etc.
+│   │ 
+│   ├── services/
+│   │   └── api.ts               # Axios instance + interceptors
+│   └── utils/                   # formatDate, formatTime, constants
+│
+├── features/                    # Feature modules
+│   ├── auth/                    # MEMBER 4
+│   │   ├── pages/               # LoginPage, OAuthCallbackPage
+│   │   ├── components/          # Auth UI components
+│   │   ├── services/            # authService.ts
+│   │   ├── hooks/               # useAuth.ts
+│   │   └── store/               # Optional local Zustand slice
+│   ├── booking/                 # MEMBER 2
+│   │   ├── pages/               # Booking pages
+│   │   ├── components/          # BookingCard, StatusBadge, RejectModal
+│   │   ├── services/            # bookingService.ts
+│   │   ├── hooks/               # useBookings.ts
+│   │   └── types/               # bookingTypes.ts/ts
+│   ├── ticket/                  # MEMBER 3
+│   │   ├── pages/
+│   │   ├── components/
+│   │   ├── services/
+│   │   └── hooks/
+│   ├── resource/                # MEMBER 1
+│   │   ├── pages/
+│   │   ├── components/
+│   │   ├── services/
+│   │   └── hooks/
+│   ├── notification/            # MEMBER 4
+│   │   ├── pages/
+│   │   ├── components/
+│   │   ├── services/
+│   │   └── hooks/
+│   └── admin/                   # MEMBER 4
+│       ├── pages/
+│       ├── components/
+│       ├── services/
+│       ├── hooks/               
+│       └── store/ 
+│
+├── layouts/                     # Page layouts
+│   ├── MainLayout.tsx
+│   └── AuthLayout.tsx
+│
+├── routes/                      # Route guards
+│   ├── ProtectedRoute.tsx
+│   └── AdminRoute.tsx
 │
 ├── index.html                            ← Vite HTML entry point
-├── vite.config.js                        ← Vite config + proxy to backend
-├── tailwind.config.js                    ← Tailwind config (darkMode: 'class')
-├── postcss.config.js                     ← Required for Tailwind
+├── vite.config.ts                        ← Vite config + proxy to backend
+├── tailwind.config.ts                    ← Tailwind config (darkMode: 'class')
+├── postcss.config.ts                     ← Required for Tailwind
 └── package.json                          ← All npm dependencies
 ```
 

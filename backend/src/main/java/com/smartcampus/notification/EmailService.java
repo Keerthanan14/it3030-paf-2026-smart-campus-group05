@@ -22,9 +22,9 @@ public class EmailService {
 
     public EmailService(
             JavaMailSender mailSender,
-            @Value("") boolean mailEnabled,
-            @Value("") boolean authDebug,
-            @Value("") String fromAddress) {
+            @Value("${app.mail.enabled:false}") boolean mailEnabled,
+            @Value("${app.auth.debug:false}") boolean authDebug,
+            @Value("${app.mail.from:}") String fromAddress) {
         this.mailSender = mailSender;
         this.mailEnabled = mailEnabled;
         this.authDebug = authDebug;

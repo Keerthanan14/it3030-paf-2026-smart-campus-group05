@@ -3,6 +3,7 @@ package com.smartcampus.security;
 import com.smartcampus.user.Role;
 import com.smartcampus.user.User;
 import com.smartcampus.user.UserRepository;
+import com.smartcampus.user.AuthProvider;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -49,7 +50,19 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         } else {
             String lookupEmail = email;
             User user = userRepository.findByEmailIgnoreCase(lookupEmail)
-                    .orElseThrow(() -> new IllegalStateException("User not found after OAuth login: " + lookupEmail));
+                    .orElseGet(() -> {
+                        User created = new User();
+                        created.setEmail(lookupEmail);
+                        String name = principal.getAttribute("name");
+                        String picture = principal.getAttribute("picture");
+                        created.setName(name != null && !name.isBlank() ? name : lookupEmail);
+                        created.setProfilePicture(picture);
+                        created.setRole(Role.STUDENT);
+                        created.setAuthProvider(AuthProvider.GOOGLE);
+                        created.setEmailVerified(true);
+                        created.setForcePasswordChange(false);
+                        return userRepository.save(created);
+                    });
             userId = user.getId();
             role = user.getRole();
             if (email == null || email.isBlank()) {
