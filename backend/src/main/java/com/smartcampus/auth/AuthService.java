@@ -98,7 +98,9 @@ public class AuthService {
         String email = normalizeEmail(request.email());
         String name = request.name().trim();
 
-        if (userRepository.existsByEmailIgnoreCase(email)) {
+        User existingUser = userRepository.findByEmailIgnoreCase(email).orElse(null);
+
+        if (existingUser != null && existingUser.getPasswordHash() != null && !existingUser.getPasswordHash().isBlank()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
         }
 
@@ -139,22 +141,39 @@ public class AuthService {
 
         validateCode(codeRecord, request.code());
         if (!codeRecord.isVerified()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verify the code before setting password");
+            // Treat a valid code submission here as verified to support both 2-step and direct set-password flows.
+            codeRecord.setVerified(true);
         }
 
-        if (userRepository.existsByEmailIgnoreCase(email)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
-        }
+        User existingUser = userRepository.findByEmailIgnoreCase(email).orElse(null);
 
-        User user = new User();
-        user.setEmail(email);
-        user.setName(codeRecord.getName());
-        user.setRole(Role.STUDENT);
-        user.setAuthProvider(AuthProvider.LOCAL);
-        user.setEmailVerified(true);
-        user.setForcePasswordChange(false);
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
-        userRepository.save(user);
+        if (existingUser != null) {
+            if (existingUser.getPasswordHash() != null && !existingUser.getPasswordHash().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
+            }
+
+            existingUser.setPasswordHash(passwordEncoder.encode(request.password()));
+            existingUser.setEmailVerified(true);
+            existingUser.setForcePasswordChange(false);
+            existingUser.setAuthProvider(
+                    existingUser.getAuthProvider() == AuthProvider.GOOGLE
+                            ? AuthProvider.BOTH
+                            : AuthProvider.LOCAL);
+            if (existingUser.getName() == null || existingUser.getName().isBlank()) {
+                existingUser.setName(codeRecord.getName());
+            }
+            userRepository.save(existingUser);
+        } else {
+            User user = new User();
+            user.setEmail(email);
+            user.setName(codeRecord.getName());
+            user.setRole(Role.STUDENT);
+            user.setAuthProvider(AuthProvider.LOCAL);
+            user.setEmailVerified(true);
+            user.setForcePasswordChange(false);
+            user.setPasswordHash(passwordEncoder.encode(request.password()));
+            userRepository.save(user);
+        }
 
         codeRecord.setUsed(true);
         verificationCodeRepository.save(codeRecord);
@@ -177,6 +196,7 @@ public class AuthService {
                 user.getName(),
                 user.getProfilePicture(),
                 user.getRole().name(),
+            user.getAuthProvider().name(),
                 user.isEmailVerified(),
                 user.isForcePasswordChange(),
                 user.getCreatedAt());

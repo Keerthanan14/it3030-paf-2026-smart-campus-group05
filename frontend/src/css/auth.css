@@ -1,0 +1,472 @@
+@layer components {
+  .auth-page {
+    background: linear-gradient(145deg, #f8fafc 0%, #eef2ff 30%, #f1f5f9 60%, #f8fafc 100%);
+  }
+
+  .dark .auth-page {
+    background: rgba(17, 20, 35, 0.92);
+  }
+
+  .auth-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(72px);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .auth-center-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(circle at 52% 48%, rgba(37, 99, 235, 0.1), transparent 70%);
+    filter: blur(82px);
+  }
+
+  .auth-orb-1 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.12), transparent 70%);
+    top: -15%;
+    left: -8%;
+    animation: auth-float 20s ease-in-out infinite;
+  }
+
+  .auth-orb-2 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.1), transparent 70%);
+    top: -10%;
+    right: 15%;
+    animation: auth-float 25s ease-in-out infinite reverse;
+  }
+
+  .auth-orb-3 {
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.08), transparent 70%);
+    bottom: -10%;
+    left: 20%;
+    animation: auth-float 18s ease-in-out infinite 4s;
+  }
+
+  .auth-orb-4 {
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.08), transparent 70%);
+    bottom: 5%;
+    right: -5%;
+    animation: auth-float 22s ease-in-out infinite 2s;
+  }
+
+  .dark .auth-orb-1 {
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.26), transparent 70%);
+  }
+
+  .dark .auth-orb-2 {
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.24), transparent 70%);
+  }
+
+  .dark .auth-orb-3 {
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.2), transparent 70%);
+  }
+
+  .dark .auth-orb-4 {
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.2), transparent 70%);
+  }
+
+  @keyframes auth-float {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(25px, -18px) scale(1.04);
+    }
+    66% {
+      transform: translate(-18px, 12px) scale(0.96);
+    }
+  }
+
+  .auth-logo-bg {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  }
+
+  .auth-feature-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.35s ease;
+  }
+
+  .auth-feature-card:hover {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+  }
+
+  .dark .auth-feature-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .dark .auth-feature-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow: none;
+  }
+
+  .auth-feature-card-tall {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .auth-glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.06),
+      0 2px 10px rgba(0, 0, 0, 0.03);
+  }
+
+  .dark .auth-glass-card {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.25),
+      0 2px 10px rgba(0, 0, 0, 0.1);
+    background: rgba(17, 20, 35, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: hsl(210 20% 98%);
+  }
+
+  .auth-sphere {
+    position: absolute;
+    bottom: -210px;
+    left: -210px;
+    width: 560px;
+    height: 560px;
+    border-radius: 50%;
+    border: 1.8px solid rgba(0, 0, 0, 0.18);
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0.24;
+    animation: auth-sphere-rotate 48s linear infinite;
+    background:
+      radial-gradient(circle, transparent 55%, rgba(0, 0, 0, 0.06) 56%, transparent 57%),
+      conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(0, 0, 0, 0.14) 2deg,
+        transparent 4deg,
+        transparent 30deg,
+        rgba(0, 0, 0, 0.14) 32deg,
+        transparent 34deg,
+        transparent 60deg,
+        rgba(0, 0, 0, 0.14) 62deg,
+        transparent 64deg,
+        transparent 90deg,
+        rgba(0, 0, 0, 0.14) 92deg,
+        transparent 94deg,
+        transparent 120deg,
+        rgba(0, 0, 0, 0.14) 122deg,
+        transparent 124deg,
+        transparent 150deg,
+        rgba(0, 0, 0, 0.14) 152deg,
+        transparent 154deg,
+        transparent 180deg,
+        rgba(0, 0, 0, 0.14) 182deg,
+        transparent 184deg,
+        transparent 210deg,
+        rgba(0, 0, 0, 0.14) 212deg,
+        transparent 214deg,
+        transparent 240deg,
+        rgba(0, 0, 0, 0.14) 242deg,
+        transparent 244deg,
+        transparent 270deg,
+        rgba(0, 0, 0, 0.14) 272deg,
+        transparent 274deg,
+        transparent 300deg,
+        rgba(0, 0, 0, 0.14) 302deg,
+        transparent 304deg,
+        transparent 330deg,
+        rgba(0, 0, 0, 0.14) 332deg,
+        transparent 334deg,
+        transparent 360deg
+      );
+    box-shadow:
+      inset 0 0 0 1.8px rgba(0, 0, 0, 0.14),
+      inset 85px 0 0 -83px rgba(0, 0, 0, 0.14),
+      inset -85px 0 0 -83px rgba(0, 0, 0, 0.14),
+      inset 0 85px 0 -83px rgba(0, 0, 0, 0.14),
+      inset 0 -85px 0 -83px rgba(0, 0, 0, 0.14);
+  }
+
+  .auth-sphere-top-right {
+    top: -150px;
+    right: -150px;
+    bottom: auto;
+    left: auto;
+    width: 360px;
+    height: 360px;
+    opacity: 0.16;
+    animation-duration: 62s;
+    animation-direction: reverse;
+  }
+
+  .auth-sphere-bottom-center {
+    top: auto;
+    left: 50%;
+    right: auto;
+    bottom: -120px;
+    width: 240px;
+    height: 240px;
+    opacity: 0.14;
+    animation-duration: 72s;
+    transform: translateX(-50%);
+  }
+
+  .dark .auth-sphere {
+    border: 1.8px solid rgba(255, 255, 255, 0.2);
+    background:
+      radial-gradient(circle, transparent 55%, rgba(255, 255, 255, 0.08) 56%, transparent 57%),
+      conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(255, 255, 255, 0.13) 2deg,
+        transparent 4deg,
+        transparent 30deg,
+        rgba(255, 255, 255, 0.13) 32deg,
+        transparent 34deg,
+        transparent 60deg,
+        rgba(255, 255, 255, 0.13) 62deg,
+        transparent 64deg,
+        transparent 90deg,
+        rgba(255, 255, 255, 0.13) 92deg,
+        transparent 94deg,
+        transparent 120deg,
+        rgba(255, 255, 255, 0.13) 122deg,
+        transparent 124deg,
+        transparent 150deg,
+        rgba(255, 255, 255, 0.13) 152deg,
+        transparent 154deg,
+        transparent 180deg,
+        rgba(255, 255, 255, 0.13) 182deg,
+        transparent 184deg,
+        transparent 210deg,
+        rgba(255, 255, 255, 0.13) 212deg,
+        transparent 214deg,
+        transparent 240deg,
+        rgba(255, 255, 255, 0.13) 242deg,
+        transparent 244deg,
+        transparent 270deg,
+        rgba(255, 255, 255, 0.13) 272deg,
+        transparent 274deg,
+        transparent 300deg,
+        rgba(255, 255, 255, 0.13) 302deg,
+        transparent 304deg,
+        transparent 330deg,
+        rgba(255, 255, 255, 0.13) 332deg,
+        transparent 334deg,
+        transparent 360deg
+      );
+    box-shadow:
+      inset 0 0 0 1.8px rgba(255, 255, 255, 0.14),
+      inset 85px 0 0 -83px rgba(255, 255, 255, 0.14),
+      inset -85px 0 0 -83px rgba(255, 255, 255, 0.14),
+      inset 0 85px 0 -83px rgba(255, 255, 255, 0.14),
+      inset 0 -85px 0 -83px rgba(255, 255, 255, 0.14);
+  }
+
+  .auth-ring-wireframe .auth-sphere,
+  .auth-ring-style-2 .auth-sphere {
+    border-width: 1.2px;
+    opacity: 0.15;
+    animation-duration: 56s;
+    background:
+      radial-gradient(circle, transparent 60%, rgba(0, 0, 0, 0.04) 61%, transparent 62%),
+      conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(0, 0, 0, 0.08) 1deg,
+        transparent 3deg,
+        transparent 45deg,
+        rgba(0, 0, 0, 0.08) 46deg,
+        transparent 48deg,
+        transparent 90deg,
+        rgba(0, 0, 0, 0.08) 91deg,
+        transparent 93deg,
+        transparent 135deg,
+        rgba(0, 0, 0, 0.08) 136deg,
+        transparent 138deg,
+        transparent 180deg,
+        rgba(0, 0, 0, 0.08) 181deg,
+        transparent 183deg,
+        transparent 225deg,
+        rgba(0, 0, 0, 0.08) 226deg,
+        transparent 228deg,
+        transparent 270deg,
+        rgba(0, 0, 0, 0.08) 271deg,
+        transparent 273deg,
+        transparent 315deg,
+        rgba(0, 0, 0, 0.08) 316deg,
+        transparent 318deg,
+        transparent 360deg
+      );
+  }
+
+  .auth-ring-wireframe .auth-sphere-top-right,
+  .auth-ring-wireframe .auth-sphere-bottom-center,
+  .auth-ring-style-2 .auth-sphere-top-right,
+  .auth-ring-style-2 .auth-sphere-bottom-center {
+    opacity: 0.1;
+  }
+
+  .dark .auth-ring-wireframe .auth-sphere,
+  .dark .auth-ring-style-2 .auth-sphere {
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+
+  .auth-ring-radar .auth-sphere,
+  .auth-ring-style-3 .auth-sphere {
+    border-width: 2px;
+    opacity: 0.28;
+    animation-duration: 40s;
+    background:
+      radial-gradient(circle, transparent 52%, rgba(0, 0, 0, 0.08) 53%, transparent 54%),
+      repeating-conic-gradient(
+        from 0deg,
+        rgba(0, 0, 0, 0.18) 0deg 2deg,
+        transparent 2deg 10deg
+      );
+  }
+
+  .auth-ring-radar .auth-sphere-top-right,
+  .auth-ring-style-3 .auth-sphere-top-right {
+    opacity: 0.2;
+    animation-duration: 48s;
+  }
+
+  .auth-ring-radar .auth-sphere-bottom-center,
+  .auth-ring-style-3 .auth-sphere-bottom-center {
+    opacity: 0.18;
+    animation-duration: 58s;
+  }
+
+  .dark .auth-ring-radar .auth-sphere,
+  .dark .auth-ring-style-3 .auth-sphere {
+    border-color: rgba(255, 255, 255, 0.24);
+    background:
+      radial-gradient(circle, transparent 52%, rgba(255, 255, 255, 0.1) 53%, transparent 54%),
+      repeating-conic-gradient(
+        from 0deg,
+        rgba(255, 255, 255, 0.16) 0deg 2deg,
+        transparent 2deg 10deg
+      );
+  }
+
+  .auth-ring-cinematic .auth-sphere,
+  .auth-ring-style-4 .auth-sphere {
+    border-width: 1.4px;
+    opacity: 0.12;
+    animation-duration: 70s;
+    background:
+      radial-gradient(circle, transparent 57%, rgba(0, 0, 0, 0.03) 58%, transparent 59%),
+      conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(0, 0, 0, 0.07) 3deg,
+        transparent 7deg,
+        transparent 70deg,
+        rgba(0, 0, 0, 0.07) 73deg,
+        transparent 77deg,
+        transparent 140deg,
+        rgba(0, 0, 0, 0.07) 143deg,
+        transparent 147deg,
+        transparent 210deg,
+        rgba(0, 0, 0, 0.07) 213deg,
+        transparent 217deg,
+        transparent 280deg,
+        rgba(0, 0, 0, 0.07) 283deg,
+        transparent 287deg,
+        transparent 360deg
+      );
+  }
+
+  .auth-ring-cinematic .auth-sphere-top-right,
+  .auth-ring-cinematic .auth-sphere-bottom-center,
+  .auth-ring-style-4 .auth-sphere-top-right,
+  .auth-ring-style-4 .auth-sphere-bottom-center {
+    opacity: 0.08;
+  }
+
+  .dark .auth-ring-cinematic .auth-sphere,
+  .dark .auth-ring-style-4 .auth-sphere {
+    border-color: rgba(255, 255, 255, 0.12);
+    background:
+      radial-gradient(circle, transparent 57%, rgba(255, 255, 255, 0.05) 58%, transparent 59%),
+      conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(255, 255, 255, 0.09) 3deg,
+        transparent 7deg,
+        transparent 70deg,
+        rgba(255, 255, 255, 0.09) 73deg,
+        transparent 77deg,
+        transparent 140deg,
+        rgba(255, 255, 255, 0.09) 143deg,
+        transparent 147deg,
+        transparent 210deg,
+        rgba(255, 255, 255, 0.09) 213deg,
+        transparent 217deg,
+        transparent 280deg,
+        rgba(255, 255, 255, 0.09) 283deg,
+        transparent 287deg,
+        transparent 360deg
+      );
+  }
+
+  @keyframes auth-sphere-rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .btn-shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-shine::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+    animation: btn-shine-sweep 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes btn-shine-sweep {
+    0%,
+    100% {
+      left: -100%;
+    }
+    50% {
+      left: 120%;
+    }
+  }
+}

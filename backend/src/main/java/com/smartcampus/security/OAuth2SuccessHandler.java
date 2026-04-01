@@ -38,36 +38,53 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         OAuth2User principal = (OAuth2User) authentication.getPrincipal();
         String email = principal.getAttribute("email");
+        String name = principal.getAttribute("name");
+        String picture = principal.getAttribute("picture");
         String appUserId = principal.getAttribute("appUserId");
         String appRole = principal.getAttribute("appRole");
 
-        UUID userId;
-        Role role;
+        User user = null;
+        if (appUserId != null && !appUserId.isBlank()) {
+            user = userRepository.findById(UUID.fromString(appUserId)).orElse(null);
+        }
 
-        if (appUserId != null && appRole != null) {
-            userId = UUID.fromString(appUserId);
-            role = Role.valueOf(appRole);
-        } else {
-            String lookupEmail = email;
-            User user = userRepository.findByEmailIgnoreCase(lookupEmail)
-                    .orElseGet(() -> {
-                        User created = new User();
-                        created.setEmail(lookupEmail);
-                        String name = principal.getAttribute("name");
-                        String picture = principal.getAttribute("picture");
-                        created.setName(name != null && !name.isBlank() ? name : lookupEmail);
-                        created.setProfilePicture(picture);
-                        created.setRole(Role.STUDENT);
-                        created.setAuthProvider(AuthProvider.GOOGLE);
-                        created.setEmailVerified(true);
-                        created.setForcePasswordChange(false);
-                        return userRepository.save(created);
-                    });
-            userId = user.getId();
-            role = user.getRole();
+        if (user == null && email != null && !email.isBlank()) {
+            user = userRepository.findByEmailIgnoreCase(email).orElse(null);
+        }
+
+        if (user == null) {
             if (email == null || email.isBlank()) {
-                email = user.getEmail();
+                throw new IllegalStateException("OAuth login succeeded but email is missing from principal");
             }
+            user = new User();
+            user.setEmail(email);
+            user.setRole(Role.STUDENT);
+        }
+
+        if (name != null && !name.isBlank()) {
+            user.setName(name);
+        } else if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getEmail());
+        }
+
+        if (picture != null && !picture.isBlank()) {
+            user.setProfilePicture(picture);
+        }
+
+        user.setEmailVerified(true);
+        user.setForcePasswordChange(false);
+        if (user.getPasswordHash() != null && !user.getPasswordHash().isBlank()) {
+            user.setAuthProvider(AuthProvider.BOTH);
+        } else {
+            user.setAuthProvider(AuthProvider.GOOGLE);
+        }
+
+        user = userRepository.save(user);
+
+        UUID userId = user.getId();
+        Role role = user.getRole();
+        if (email == null || email.isBlank()) {
+            email = user.getEmail();
         }
 
         if (email == null || email.isBlank()) {

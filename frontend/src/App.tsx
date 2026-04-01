@@ -9,6 +9,8 @@ import OAuthCallbackPage from './features/auth/pages/OAuthCallbackPage';
 import AdminDashboardPage from './features/admin/pages/AdminDashboardPage.tsx';
 import StudentDashboardPage from './features/booking/pages/StudentDashboardPage.tsx';
 import TechnicianDashboardPage from './features/ticket/pages/TechnicianDashboardPage.tsx';
+import StudentNotificationsPage from './features/student/pages/StudentNotificationsPage.tsx';
+import StudentSettingsPage from './features/student/pages/StudentSettingsPage.tsx';
 
 function App() {
   return (
@@ -35,6 +37,8 @@ function App() {
           
           <Route path="/student/dashboard" element={<StudentDashboardPage />} />
           <Route path="/booking" element={<div>My Bookings</div>} />
+          <Route path="/student/notifications" element={<StudentNotificationsPage />} />
+          <Route path="/student/settings" element={<StudentSettingsPage />} />
 
           <Route path="/technician/dashboard" element={<TechnicianDashboardPage />} />
           <Route path="/technician/tickets" element={<div>Assigned Tickets</div>} />

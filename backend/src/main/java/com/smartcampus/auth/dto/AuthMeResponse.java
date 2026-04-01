@@ -9,6 +9,7 @@ public record AuthMeResponse(
         String name,
         String profilePicture,
         String role,
+        String authProvider,
         boolean emailVerified,
         boolean forcePasswordChange,
         LocalDateTime createdAt) {

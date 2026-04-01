@@ -40,10 +40,16 @@ public class CustomOAuth2UserService implements org.springframework.security.oau
         User user = userRepository.findByEmailIgnoreCase(email)
                 .map(existing -> {
                     existing.setName(name != null ? name : existing.getName());
-                    existing.setProfilePicture(picture);
+                    if (picture != null && !picture.isBlank()) {
+                        existing.setProfilePicture(picture);
+                    }
                     existing.setEmailVerified(true);
                     existing.setForcePasswordChange(false);
-                    existing.setAuthProvider(AuthProvider.GOOGLE);
+                    if (existing.getPasswordHash() != null && !existing.getPasswordHash().isBlank()) {
+                        existing.setAuthProvider(AuthProvider.BOTH);
+                    } else {
+                        existing.setAuthProvider(AuthProvider.GOOGLE);
+                    }
                     return userRepository.save(existing);
                 })
                 .orElseGet(() -> {
