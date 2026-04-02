@@ -8,6 +8,7 @@ import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
 import { authApi } from '../../../core/api/authApi';
 import type { ApiErrorResponse } from '../../../types/api';
+import { useToast } from '../../../shared/components/ui/ToastProvider';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -16,11 +17,10 @@ const forgotPasswordSchema = z.object({
 type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPasswordPage() {
-  const [serverError, setServerError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [hasSentCode, setHasSentCode] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [isResending, setIsResending] = useState(false);
+  const toast = useToast();
 
   const {
     register,
@@ -53,16 +53,15 @@ export default function ForgotPasswordPage() {
 
   const sendResetRequest = async (email: string) => {
     try {
-      setServerError('');
       await authApi.forgotPassword({ email });
-      setSuccessMessage('If an account matches that email, a password reset link has been sent.');
+      toast.success('Request sent', 'If an account matches that email, a password reset link has been sent.');
       setHasSentCode(true);
       setCooldownSeconds(60);
     } catch (err: unknown) {
       const message = axios.isAxiosError<ApiErrorResponse>(err)
         ? err.response?.data?.message
         : undefined;
-      setServerError(message || 'Unable to process your request at this time.');
+      toast.error('Request failed', message || 'Unable to process your request at this time.');
     }
   };
 
@@ -75,7 +74,7 @@ export default function ForgotPasswordPage() {
     const parsed = forgotPasswordSchema.safeParse({ email });
 
     if (!parsed.success) {
-      setServerError(parsed.error.issues[0]?.message || 'Enter a valid email address.');
+      toast.warning('Invalid email', parsed.error.issues[0]?.message || 'Enter a valid email address.');
       return;
     }
 
@@ -105,18 +104,6 @@ export default function ForgotPasswordPage() {
           {...register('email')}
           error={errors.email?.message}
         />
-
-        {serverError && (
-          <div className="text-error text-sm text-center bg-error/10 py-2 rounded">
-            {serverError}
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="text-sm bg-success/10 p-4 rounded-md text-success relative border border-success/30">
-            {successMessage}
-          </div>
-        )}
 
         <Button type="submit" className="w-full" isLoading={isSubmitting}>
           Send

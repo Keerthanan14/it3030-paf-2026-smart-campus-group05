@@ -1,12 +1,14 @@
 import type { UserRole } from '../../types/auth';
 
 export function redirectByRole(role: UserRole, navigate: (path: string) => void) {
-  if (role === 'ROLE_ADMIN') {
+  const normalizedRole = role.replace('ROLE_', '').toUpperCase();
+
+  if (normalizedRole === 'ADMIN') {
     navigate('/admin/dashboard');
     return;
   }
 
-  if (role === 'ROLE_TECHNICIAN') {
+  if (normalizedRole === 'TECHNICIAN') {
     navigate('/technician/dashboard');
     return;
   }

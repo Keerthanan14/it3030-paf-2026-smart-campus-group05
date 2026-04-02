@@ -1,4 +1,11 @@
-export type UserRole = 'ROLE_ADMIN' | 'ROLE_STUDENT' | 'ROLE_TECHNICIAN' | string;
+export type UserRole =
+  | 'ADMIN'
+  | 'STUDENT'
+  | 'TECHNICIAN'
+  | 'ROLE_ADMIN'
+  | 'ROLE_STUDENT'
+  | 'ROLE_TECHNICIAN'
+  | string;
 
 export interface AuthUser {
   id: string;

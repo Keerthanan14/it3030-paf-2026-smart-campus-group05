@@ -3,11 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import axios from 'axios';
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
 import { authApi } from '../../../core/api/authApi';
 import { useAuthStore } from '../../../core/store/authStore';
 import { redirectByRole } from '../../../core/utils/redirectByRole';
+import { useToast } from '../../../shared/components/ui/ToastProvider';
+import type { ApiErrorResponse } from '../../../types/api';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -19,9 +22,9 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
-  const [serverError, setServerError] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const toast = useToast();
 
   const {
     register,
@@ -33,7 +36,6 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      setServerError('');
       const response = await authApi.login(data);
       
       const token = response.data.accessToken;
@@ -42,12 +44,29 @@ export default function LoginPage() {
       const userResponse = await authApi.me(token);
 
       setAuth(userResponse.data, token);
+      toast.success('Login successful', 'Welcome back to SmartCampus.');
 
       // Define where to redirect based on role
       redirectByRole(userResponse.data.role, navigate);
       
-    } catch {
-      setServerError('Invalid email or password');
+    } catch (err: unknown) {
+      if (axios.isAxiosError<ApiErrorResponse>(err)) {
+        if (!err.response) {
+          toast.error('Server unavailable', 'Backend server is not running or unreachable.');
+          return;
+        }
+
+        if (err.response.status === 401) {
+          toast.error('Login failed', 'Invalid email or password');
+          return;
+        }
+
+        const message = err.response.data?.message || 'Unable to sign in right now. Please try again.';
+        toast.warning('Login issue', message);
+        return;
+      }
+
+      toast.error('Login failed', 'Unexpected error occurred. Please try again.');
     }
   };
 
@@ -63,12 +82,6 @@ export default function LoginPage() {
       </div>
 
       <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-        {serverError && (
-          <div className="rounded-lg bg-error/10 px-3 py-2 text-center text-sm text-error">
-            {serverError}
-          </div>
-        )}
-
         <Input
           id="email"
           type="email"

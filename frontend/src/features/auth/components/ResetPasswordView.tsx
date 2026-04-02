@@ -8,6 +8,7 @@ import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
 import { authApi } from '../../../core/api/authApi';
 import type { ApiErrorResponse } from '../../../types/api';
+import { useToast } from '../../../shared/components/ui/ToastProvider';
 
 const resetPasswordSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
@@ -24,10 +25,10 @@ export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   
-  const [serverError, setServerError] = useState('');
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const toast = useToast();
 
   const {
     register,
@@ -39,12 +40,11 @@ export default function ResetPasswordPage() {
 
   const onSubmit = async (data: ResetPasswordValues) => {
     if (!token) {
-      setServerError('Wait! The password reset token is missing from the URL.');
+      toast.warning('Missing token', 'The password reset token is missing from the URL.');
       return;
     }
 
     try {
-      setServerError('');
       // Adjust with real endpoint
       await authApi.resetPassword({ 
         token, 
@@ -52,12 +52,13 @@ export default function ResetPasswordPage() {
       });
       
       setSuccess(true);
+      toast.success('Password reset successful', 'Redirecting to login...');
       setTimeout(() => navigate('/auth/login'), 3000);
     } catch (err: unknown) {
       const message = axios.isAxiosError<ApiErrorResponse>(err)
         ? err.response?.data?.message
         : undefined;
-      setServerError(message || 'The reset link is invalid or expired.');
+      toast.error('Reset failed', message || 'The reset link is invalid or expired.');
     }
   };
 
@@ -84,9 +85,7 @@ export default function ResetPasswordPage() {
 
       {success ? (
         <div className="text-center space-y-6">
-          <div className="text-sm bg-success/10 p-4 rounded-md text-success relative border border-success/30">
-            Password reset successfully. Redirecting to login...
-          </div>
+          <div className="text-sm text-foreground/75">Password reset successfully. Redirecting to login...</div>
           <Link to="/auth/login" className="block">
             <Button type="button" className="w-full">
               Go to Login Now
@@ -156,12 +155,6 @@ export default function ResetPasswordPage() {
               </button>
             }
           />
-
-          {serverError && (
-            <div className="text-error text-sm text-center bg-error/10 py-2 rounded">
-              {serverError}
-            </div>
-          )}
 
           <Button type="submit" className="w-full" isLoading={isSubmitting}>
             Reset Password

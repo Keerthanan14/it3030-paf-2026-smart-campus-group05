@@ -13,31 +13,42 @@ interface ToastProps {
 }
 
 const icons = {
-  success: <CheckCircle className="h-5 w-5 text-emerald-500" />,
-  error: <AlertCircle className="h-5 w-5 text-red-500" />,
-  info: <Info className="h-5 w-5 text-blue-500" />,
-  warning: <AlertTriangle className="h-5 w-5 text-amber-500" />,
+  success: CheckCircle,
+  error: AlertCircle,
+  info: Info,
+  warning: AlertTriangle,
+};
+
+const variantStyles: Record<ToastType, string> = {
+  success: 'text-success',
+  error: 'text-error',
+  info: 'text-info',
+  warning: 'text-warning',
 };
 
 export function Toast({ id, type = 'info', title, description, onClose }: ToastProps) {
+  const Icon = icons[type];
+
   return (
     <div
       className={twMerge(
         clsx(
-          'pointer-events-auto flex w-full max-w-md items-start space-x-4 rounded-lg bg-background p-4 shadow-lg ring-1 ring-border',
+          'pointer-events-auto flex h-24 w-[360px] items-start space-x-4 overflow-hidden rounded-lg bg-background p-4 shadow-lg ring-1 ring-border',
         )
       )}
     >
-      <div className="flex-shrink-0">{icons[type]}</div>
-      <div className="flex-1 pt-0.5">
-        <p className="text-sm font-medium text-foreground">{title}</p>
+      <div className="flex-shrink-0">
+        <Icon className={clsx('h-5 w-5', variantStyles[type])} />
+      </div>
+      <div className="min-w-0 flex-1 pt-0.5">
+        <p className={clsx('line-clamp-1 text-sm font-semibold', variantStyles[type])}>{title}</p>
         {description && (
-          <p className="mt-1 text-sm text-foreground/70">{description}</p>
+          <p className="mt-1 line-clamp-2 text-sm text-foreground/80">{description}</p>
         )}
       </div>
       <button
         onClick={() => onClose(id)}
-        className="inline-flex shrink-0 rounded-md text-foreground/50 hover:text-foreground focus:outline-none"
+        className="inline-flex shrink-0 self-start rounded-md text-foreground/55 hover:text-foreground focus:outline-none"
       >
         <span className="sr-only">Close</span>
         <X className="h-5 w-5" />

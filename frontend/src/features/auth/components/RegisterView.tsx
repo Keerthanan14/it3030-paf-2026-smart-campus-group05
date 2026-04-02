@@ -8,6 +8,7 @@ import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
 import { authApi } from '../../../core/api/authApi';
 import type { ApiErrorResponse } from '../../../types/api';
+import { useToast } from '../../../shared/components/ui/ToastProvider';
 
 // Schemas for the 3 steps
 const step1Schema = z.object({
@@ -35,10 +36,10 @@ type Step3Values = z.infer<typeof step3Schema>;
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [serverError, setServerError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const stepItems = ['Account Info', 'Verify Email', 'Set Password'] as const;
+  const toast = useToast();
   
   // Stored state between steps
   const [userData, setUserData] = useState({ name: '', email: '', code: '' });
@@ -50,7 +51,6 @@ export default function RegisterPage() {
 
   const onStep1Submit = async (data: Step1Values) => {
     try {
-      setServerError('');
       const fullName = `${data.firstName.trim()} ${data.lastName.trim()}`.trim();
 
       await authApi.requestRegisterCode({
@@ -59,34 +59,34 @@ export default function RegisterPage() {
       });
       setUserData((prev) => ({ ...prev, name: fullName, email: data.email }));
       setStep(2);
+      toast.success('Code sent', 'Verification code has been sent to your email.');
     } catch (err: unknown) {
       const message = axios.isAxiosError<ApiErrorResponse>(err)
         ? err.response?.data?.message
         : undefined;
-      setServerError(message || 'Failed to send verification code. Email might be in use.');
+      toast.error('Send code failed', message || 'Failed to send verification code. Email might be in use.');
     }
   };
 
   const onStep2Submit = async (data: Step2Values) => {
     try {
-      setServerError('');
       await authApi.verifyRegisterCode({
         email: userData.email,
         code: data.code,
       });
       setUserData((prev) => ({ ...prev, code: data.code }));
       setStep(3);
+      toast.success('Code verified', 'Please set your password to complete registration.');
     } catch (err: unknown) {
       const message = axios.isAxiosError<ApiErrorResponse>(err)
         ? err.response?.data?.message
         : undefined;
-      setServerError(message || 'Invalid or expired verification code.');
+      toast.error('Verification failed', message || 'Invalid or expired verification code.');
     }
   };
 
   const onStep3Submit = async (data: Step3Values) => {
     try {
-      setServerError('');
       await authApi.setRegisterPassword({
         email: userData.email,
         code: userData.code, // sending code again just in case backend expects it
@@ -94,12 +94,13 @@ export default function RegisterPage() {
       });
       
       // Successfully registered => login
+      toast.success('Registration complete', 'You can now log in.');
       navigate('/auth/login', { replace: true, state: { message: 'Registration successful! You can now log in.' } });
     } catch (err: unknown) {
       const message = axios.isAxiosError<ApiErrorResponse>(err)
         ? err.response?.data?.message
         : undefined;
-      setServerError(message || 'Failed to set password. Please try again.');
+      toast.error('Set password failed', message || 'Failed to set password. Please try again.');
     }
   };
 
@@ -196,12 +197,6 @@ export default function RegisterPage() {
             error={formStep1.formState.errors.email?.message}
           />
 
-          {serverError && (
-            <div className="text-error text-sm text-center bg-error/10 py-2 rounded">
-              {serverError}
-            </div>
-          )}
-
           <div className="grid grid-cols-2 gap-3 pt-1">
             <Button
               type="submit"
@@ -251,12 +246,6 @@ export default function RegisterPage() {
             error={formStep2.formState.errors.code?.message}
           />
 
-          {serverError && (
-            <div className="text-error text-sm text-center bg-error/10 py-2 rounded">
-              {serverError}
-            </div>
-          )}
-
           <div className="flex flex-col gap-3">
             <Button type="submit" className="w-full" isLoading={formStep2.formState.isSubmitting}>
               Verify Code
@@ -270,9 +259,7 @@ export default function RegisterPage() {
 
       {step === 3 && (
         <form className="space-y-6" onSubmit={formStep3.handleSubmit(onStep3Submit)}>
-          <div className="text-sm bg-success/10 p-3 rounded-md mb-4 text-success relative border border-success/30">
-            Code verified successfully. Please secure your account.
-          </div>
+          <div className="text-sm text-foreground/75">Code verified. Please secure your account.</div>
 
           <Input
             id="password"
@@ -335,12 +322,6 @@ export default function RegisterPage() {
               </button>
             }
           />
-
-          {serverError && (
-            <div className="text-error text-sm text-center bg-error/10 py-2 rounded">
-              {serverError}
-            </div>
-          )}
 
           <Button type="submit" className="w-full" isLoading={formStep3.formState.isSubmitting}>
             Complete Registration
