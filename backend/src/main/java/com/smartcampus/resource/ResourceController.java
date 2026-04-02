@@ -6,12 +6,14 @@ import com.smartcampus.resource.dto.ResourceAvailabilityResponse;
 import com.smartcampus.resource.dto.ResourceResponse;
 import com.smartcampus.resource.dto.StatusUpdateRequest;
 import com.smartcampus.resource.dto.UpdateResourceRequest;
+import com.smartcampus.security.AuthUserPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,6 +47,7 @@ public class ResourceController {
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getResources(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
             @RequestParam(required = false) ResourceType type,
             @RequestParam(required = false) Integer capacity,
             @RequestParam(required = false) String location,
@@ -53,7 +56,8 @@ public class ResourceController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             UriComponentsBuilder uriBuilder) {
-        PaginatedResourceResponse response = resourceService.getResources(type, capacity, location, keyword, status, page, size);
+        String requesterRole = principal != null ? principal.role() : null;
+        PaginatedResourceResponse response = resourceService.getResources(type, capacity, location, keyword, status, requesterRole, page, size);
 
         List<EntityModel<ResourceResponse>> resources = response.content().stream()
                 .map(this::toResourceModel)
@@ -125,7 +129,7 @@ public class ResourceController {
         EntityModel<ResourceResponse> model = EntityModel.of(resource)
                 .add(linkTo(methodOn(ResourceController.class).getResourceById(resource.id())).withSelfRel())
                 .add(linkTo(methodOn(ResourceController.class).getResources(
-                        null, null, null, null, null, 0, 10, null
+                    null, null, null, null, null, null, 0, 10, null
                 )).withRel("all-resources"));
 
         if (resource.status() == ResourceStatus.ACTIVE) {

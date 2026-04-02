@@ -15,6 +15,7 @@ public interface ResourceService {
                                            String location,
                                            String keyword,
                                            ResourceStatus status,
+                                           String requesterRole,
                                            int page,
                                            int size);
 
@@ -29,4 +30,6 @@ public interface ResourceService {
     void softDeleteResource(UUID id);
 
     ResourceAvailabilityResponse getResourceAvailability(UUID id, LocalDate from, LocalDate to);
+
+    boolean isResourceBookable(UUID id);
 }

@@ -31,6 +31,7 @@ public class ResourceServiceImpl implements ResourceService {
                                                   String location,
                                                   String keyword,
                                                   ResourceStatus status,
+                                                  String requesterRole,
                                                   int page,
                                                   int size) {
         if (page < 0) {
@@ -40,7 +41,7 @@ public class ResourceServiceImpl implements ResourceService {
             throw new IllegalArgumentException("size must be greater than 0");
         }
 
-        ResourceStatus resolvedStatus = status == null ? ResourceStatus.ACTIVE : status;
+        ResourceStatus resolvedStatus = resolveVisibleStatus(requesterRole, status);
 
         Specification<Resource> specification = Specification
                 .where(ResourceSpecifications.notDeleted())
@@ -100,8 +101,15 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     public ResourceResponse updateResourceStatus(UUID id, ResourceStatus status) {
         Resource resource = getExistingResource(id);
+        ResourceStatus previousStatus = resource.getStatus();
         resource.setStatus(status);
-        return toResponse(resourceRepository.save(resource));
+        Resource saved = resourceRepository.save(resource);
+
+        if (previousStatus != ResourceStatus.OUT_OF_SERVICE && status == ResourceStatus.OUT_OF_SERVICE) {
+            handleOutOfServiceTransition(saved);
+        }
+
+        return toResponse(saved);
     }
 
     @Override
@@ -128,9 +136,32 @@ public class ResourceServiceImpl implements ResourceService {
         );
     }
 
+    @Override
+    public boolean isResourceBookable(UUID id) {
+        return resourceRepository.findByIdAndDeletedFalse(id)
+                .map(resource -> resource.getStatus() == ResourceStatus.ACTIVE)
+                .orElse(false);
+    }
+
     private Resource getExistingResource(UUID id) {
         return resourceRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Resource not found for id: " + id));
+    }
+
+    ResourceStatus resolveVisibleStatus(String requesterRole, ResourceStatus requestedStatus) {
+        if (isAdminRole(requesterRole)) {
+            return requestedStatus;
+        }
+        return ResourceStatus.ACTIVE;
+    }
+
+    boolean isAdminRole(String requesterRole) {
+        return "ADMIN".equalsIgnoreCase(requesterRole) || "ROLE_ADMIN".equalsIgnoreCase(requesterRole);
+    }
+
+    private void handleOutOfServiceTransition(Resource resource) {
+        // Integration hook for Module B: reject pending bookings when resource goes out of service.
+        // Booking module should call ResourceService#isResourceBookable during booking create/approve flow.
     }
 
     private ResourceResponse toResponse(Resource resource) {
