@@ -10,9 +10,11 @@ import com.smartcampus.exception.BookingForbiddenException;
 import com.smartcampus.exception.BookingNotFoundException;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.notification.NotificationService;
+import com.smartcampus.resource.AvailabilityWindow;
 import com.smartcampus.resource.Resource;
 import com.smartcampus.resource.ResourceRepository;
 import com.smartcampus.resource.ResourceService;
+import com.smartcampus.resource.ResourceType;
 import com.smartcampus.user.User;
 import com.smartcampus.user.UserRepository;
 import org.springframework.data.domain.Page;
@@ -23,6 +25,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -117,6 +123,9 @@ public class BookingServiceImpl implements BookingService {
             throw new BookingConflictException("Resource is out of service.");
         }
 
+        validateAttendeesCount(resource, request.attendeesCount());
+        validateWithinAvailabilityWindow(resource, request.bookingDate(), request.startTime(), request.endTime());
+
         boolean hasConflict = bookingRepository
                 .existsByResource_IdAndBookingDateAndStatusAndStartTimeLessThanAndEndTimeGreaterThan(
                         resource.getId(),
@@ -156,6 +165,13 @@ public class BookingServiceImpl implements BookingService {
         if (!resourceService.isResourceBookable(booking.getResource().getId())) {
             throw new BookingConflictException("Cannot approve booking. Resource is out of service.");
         }
+
+        validateWithinAvailabilityWindow(
+            booking.getResource(),
+            booking.getBookingDate(),
+            booking.getStartTime(),
+            booking.getEndTime()
+        );
 
         boolean hasConflict = !bookingRepository.findConflictingBookingsExcludingId(
                 booking.getResource().getId(),
@@ -219,6 +235,62 @@ public class BookingServiceImpl implements BookingService {
 
     private boolean isAdminRole(String role) {
         return "ADMIN".equalsIgnoreCase(role) || "ROLE_ADMIN".equalsIgnoreCase(role);
+    }
+
+    private void validateAttendeesCount(Resource resource, Integer attendeesCount) {
+        if (resource.getType() == ResourceType.EQUIPMENT) {
+            if (attendeesCount != null && attendeesCount > resource.getCapacity()) {
+                throw new BookingBadRequestException("attendeesCount cannot exceed resource capacity");
+            }
+            return;
+        }
+
+        if (attendeesCount == null) {
+            throw new BookingBadRequestException("attendeesCount is required for ROOM and LAB resources");
+        }
+
+        if (attendeesCount > resource.getCapacity()) {
+            throw new BookingBadRequestException("attendeesCount cannot exceed resource capacity");
+        }
+    }
+
+    private void validateWithinAvailabilityWindow(Resource resource,
+                                                  LocalDate bookingDate,
+                                                  LocalTime startTime,
+                                                  LocalTime endTime) {
+        Map<String, AvailabilityWindow> windows = resource.getAvailabilityWindows();
+        if (windows == null || windows.isEmpty()) {
+            return;
+        }
+
+        String dayName = bookingDate.getDayOfWeek().name().toLowerCase(Locale.ROOT);
+        AvailabilityWindow window = windows.get(dayName);
+        if (window == null) {
+            throw new BookingBadRequestException("Requested time is outside resource availability windows");
+        }
+
+        LocalTime open = parseWindowTime(window.getOpen(), "open");
+        LocalTime close = parseWindowTime(window.getClose(), "close");
+
+        if (!startTime.isBefore(endTime)) {
+            throw new BookingBadRequestException("endTime must be after startTime");
+        }
+
+        if (startTime.isBefore(open) || endTime.isAfter(close)) {
+            throw new BookingBadRequestException("Requested time is outside resource availability windows");
+        }
+    }
+
+    private LocalTime parseWindowTime(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new BookingBadRequestException("Resource availability " + fieldName + " time is not configured");
+        }
+
+        try {
+            return LocalTime.parse(value.trim());
+        } catch (DateTimeParseException ex) {
+            throw new BookingBadRequestException("Resource availability " + fieldName + " time has invalid format");
+        }
     }
 
     private BookingResponse toResponse(Booking booking) {

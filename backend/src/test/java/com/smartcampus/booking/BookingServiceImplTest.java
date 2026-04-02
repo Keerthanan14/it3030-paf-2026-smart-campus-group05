@@ -6,9 +6,11 @@ import com.smartcampus.exception.BookingConflictException;
 import com.smartcampus.exception.BookingForbiddenException;
 import com.smartcampus.exception.BookingNotFoundException;
 import com.smartcampus.notification.NotificationService;
+import com.smartcampus.resource.AvailabilityWindow;
 import com.smartcampus.resource.Resource;
 import com.smartcampus.resource.ResourceRepository;
 import com.smartcampus.resource.ResourceService;
+import com.smartcampus.resource.ResourceType;
 import com.smartcampus.user.User;
 import com.smartcampus.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,7 +21,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -131,6 +135,78 @@ class BookingServiceImplTest {
                 () -> bookingService.rejectBooking(bookingId, new RejectBookingRequest("Resource unavailable due to exam")));
     }
 
+        @Test
+        void createBooking_shouldThrowBadRequestWhenAttendeesMissingForRoom() {
+        UUID userId = UUID.randomUUID();
+        UUID resourceId = UUID.randomUUID();
+
+        User user = new User();
+        user.setId(userId);
+
+        Resource resource = new Resource();
+        resource.setId(resourceId);
+        resource.setType(ResourceType.ROOM);
+        resource.setCapacity(30);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(resourceRepository.findByIdAndDeletedFalse(resourceId)).thenReturn(Optional.of(resource));
+        when(resourceService.isResourceBookable(resourceId)).thenReturn(true);
+
+        assertThrows(BookingBadRequestException.class,
+            () -> bookingService.createBooking(
+                new com.smartcampus.booking.dto.CreateBookingRequest(
+                    resourceId,
+                    LocalDate.now().plusDays(1),
+                    LocalTime.of(9, 0),
+                    LocalTime.of(10, 0),
+                    "Project meeting",
+                    null
+                ),
+                userId
+            ));
+        }
+
+        @Test
+        void createBooking_shouldThrowBadRequestWhenOutsideAvailabilityWindow() {
+        UUID userId = UUID.randomUUID();
+        UUID resourceId = UUID.randomUUID();
+
+        User user = new User();
+        user.setId(userId);
+
+        Resource resource = new Resource();
+        resource.setId(resourceId);
+        resource.setType(ResourceType.ROOM);
+        resource.setCapacity(30);
+
+        AvailabilityWindow mondayWindow = new AvailabilityWindow();
+        mondayWindow.setOpen("08:00");
+        mondayWindow.setClose("17:00");
+
+        Map<String, AvailabilityWindow> windows = new HashMap<>();
+        windows.put("monday", mondayWindow);
+        resource.setAvailabilityWindows(windows);
+
+        LocalDate mondayDate = LocalDate.of(2026, 4, 6);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(resourceRepository.findByIdAndDeletedFalse(resourceId)).thenReturn(Optional.of(resource));
+        when(resourceService.isResourceBookable(resourceId)).thenReturn(true);
+
+        assertThrows(BookingBadRequestException.class,
+            () -> bookingService.createBooking(
+                new com.smartcampus.booking.dto.CreateBookingRequest(
+                    resourceId,
+                    mondayDate,
+                    LocalTime.of(18, 0),
+                    LocalTime.of(19, 0),
+                    "Project meeting",
+                    5
+                ),
+                userId
+            ));
+        }
+
     private Booking newBooking(UUID bookingId, UUID ownerId, BookingStatus status) {
         User owner = new User();
         owner.setId(ownerId);
@@ -139,6 +215,8 @@ class BookingServiceImplTest {
         Resource resource = new Resource();
         resource.setId(UUID.randomUUID());
         resource.setName("Lab A");
+        resource.setType(ResourceType.LAB);
+        resource.setCapacity(40);
 
         Booking booking = new Booking();
         booking.setId(bookingId);
