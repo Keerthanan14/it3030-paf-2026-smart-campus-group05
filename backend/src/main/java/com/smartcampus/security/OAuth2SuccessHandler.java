@@ -41,7 +41,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String name = principal.getAttribute("name");
         String picture = principal.getAttribute("picture");
         String appUserId = principal.getAttribute("appUserId");
-        String appRole = principal.getAttribute("appRole");
 
         User user = null;
         if (appUserId != null && !appUserId.isBlank()) {

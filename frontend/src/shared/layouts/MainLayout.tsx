@@ -42,8 +42,8 @@ export function MainLayout() {
       );
     } else if (role === 'student' || role === 'staff') {
       nav.push(
-        { name: 'My Bookings', href: '/booking', icon: Calendar },
-        { name: 'My Tickets', href: '/ticket', icon: Ticket },
+        { name: 'My Bookings', href: '/student/booking', icon: Calendar },
+        { name: 'My Tickets', href: '/student/tickets', icon: Ticket },
         { name: 'Notifications', href: '/student/notifications', icon: Bell },
         { name: 'Settings', href: '/student/settings', icon: Settings }
       );
@@ -71,7 +71,7 @@ export function MainLayout() {
         />
 
       <div className={clsx('flex flex-col flex-1 transition-[padding-left] duration-200', isSidebarOpen ? 'lg:pl-72' : 'lg:pl-20')}>
-        <main className="py-10 flex-1">
+        <main className="py-2 flex-1">
           <div className="px-4 sm:px-6 lg:px-8 text-foreground">
             <Outlet />
           </div>

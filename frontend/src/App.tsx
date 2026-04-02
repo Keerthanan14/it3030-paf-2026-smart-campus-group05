@@ -3,14 +3,23 @@ import { AuthLayout } from './shared/layouts/AuthLayout';
 import { MainLayout } from './shared/layouts/MainLayout';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
-import ResetPasswordPage from './pages/auth/ResetPasswordPage';
-import OAuthCallbackPage from './pages/auth/OAuthCallbackPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.tsx';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage.tsx';
+import OAuthCallbackPage from './pages/auth/OAuthCallbackPage.tsx';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminNotificationsPage from './pages/admin/AdminNotificationsPage';
+import AdminSettingsPage from './pages/admin/AdminSettingsPage';
+import AdminResourcesPage from './pages/admin/AdminResourcesPage';
+import AdminTicketsPage from './pages/admin/AdminTicketsPage';
 import StudentDashboardPage from './pages/student/StudentDashboardPage';
+import StudentBookingsPage from './pages/student/StudentBookingsPage';
 import TechnicianDashboardPage from './pages/technician/TechnicianDashboardPage';
+import TechnicianTicketsPage from './pages/technician/TechnicianTicketsPage';
 import StudentNotificationsPage from './pages/student/StudentNotificationsPage';
 import StudentSettingsPage from './pages/student/StudentSettingsPage';
+import StudentTicketsPage from './pages/student/StudentTicketsPage';
+import { AdminRoute, ProtectedRoute, StudentRoute, TechnicianRoute } from './routes/RouteGuards.tsx';
 
 function App() {
   return (
@@ -26,23 +35,32 @@ function App() {
         </Route>
 
         {/* Protected Routes */}
-        <Route element={<MainLayout />}>
-          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-          <Route path="/admin/users" element={<div>User Management</div>} />
-          <Route path="/admin/notifications" element={<div>System Notifications</div>} />
-          <Route path="/admin/settings" element={<div>Admin Settings</div>} />
-          
-          <Route path="/admin/resources" element={<div>Resource Management</div>} />
-          <Route path="/admin/tickets" element={<div>Ticket Management</div>} />
-          
-          <Route path="/student/dashboard" element={<StudentDashboardPage />} />
-          <Route path="/booking" element={<div>My Bookings</div>} />
-          <Route path="/student/notifications" element={<StudentNotificationsPage />} />
-          <Route path="/student/settings" element={<StudentSettingsPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<MainLayout />}>
+            <Route element={<AdminRoute />}>
+              <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
+              <Route path="/admin/settings" element={<AdminSettingsPage />} />
+              <Route path="/admin/resources" element={<AdminResourcesPage />} />
+              <Route path="/admin/tickets" element={<AdminTicketsPage />} />
+            </Route>
 
-          <Route path="/technician/dashboard" element={<TechnicianDashboardPage />} />
-          <Route path="/technician/tickets" element={<div>Assigned Tickets</div>} />
-          <Route path="/ticket" element={<div>My Tickets</div>} />
+            <Route element={<StudentRoute />}>
+              <Route path="/student/dashboard" element={<StudentDashboardPage />} />
+              <Route path="/student/booking" element={<StudentBookingsPage />} />
+              <Route path="/booking" element={<Navigate to="/student/booking" replace />} />
+              <Route path="/student/notifications" element={<StudentNotificationsPage />} />
+              <Route path="/student/settings" element={<StudentSettingsPage />} />
+              <Route path="/student/tickets" element={<StudentTicketsPage />} />
+              <Route path="/ticket" element={<Navigate to="/student/tickets" replace />} />
+            </Route>
+
+            <Route element={<TechnicianRoute />}>
+              <Route path="/technician/dashboard" element={<TechnicianDashboardPage />} />
+              <Route path="/technician/tickets" element={<TechnicianTicketsPage />} />
+            </Route>
+          </Route>
         </Route>
 
         {/* Default Redirect */}
