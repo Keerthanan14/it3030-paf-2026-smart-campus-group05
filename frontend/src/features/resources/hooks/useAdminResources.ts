@@ -22,8 +22,10 @@ export function useAdminResources() {
     setError(null);
     try {
       const { data } = await resourceApi.listResources({ page, size, filters });
-      const payload = data as PaginatedResourceResponse;
-      setResources(payload.content);
+      const payload = data as PaginatedResourceResponse & {
+        _embedded?: { resources?: ResourceItem[] };
+      };
+      setResources(payload.content ?? payload._embedded?.resources ?? []);
       setTotalPages(payload.totalPages);
       setTotalElements(payload.totalElements);
     } catch (err) {
