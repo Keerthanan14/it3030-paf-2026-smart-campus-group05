@@ -1,5 +1,6 @@
 package com.smartcampus.resource;
 
+import com.smartcampus.booking.BookingService;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.resource.dto.CreateResourceRequest;
 import com.smartcampus.resource.dto.PaginatedResourceResponse;
@@ -20,9 +21,11 @@ import java.util.UUID;
 public class ResourceServiceImpl implements ResourceService {
 
     private final ResourceRepository resourceRepository;
+    private final BookingService bookingService;
 
-    public ResourceServiceImpl(ResourceRepository resourceRepository) {
+    public ResourceServiceImpl(ResourceRepository resourceRepository, BookingService bookingService) {
         this.resourceRepository = resourceRepository;
+        this.bookingService = bookingService;
     }
 
     @Override
@@ -160,8 +163,7 @@ public class ResourceServiceImpl implements ResourceService {
     }
 
     private void handleOutOfServiceTransition(Resource resource) {
-        // Integration hook for Module B: reject pending bookings when resource goes out of service.
-        // Booking module should call ResourceService#isResourceBookable during booking create/approve flow.
+        bookingService.autoRejectPendingForResourceOutOfService(resource.getId());
     }
 
     private ResourceResponse toResponse(Resource resource) {

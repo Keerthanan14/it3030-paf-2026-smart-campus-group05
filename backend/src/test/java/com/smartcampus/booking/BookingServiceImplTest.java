@@ -9,7 +9,7 @@ import com.smartcampus.notification.NotificationService;
 import com.smartcampus.resource.AvailabilityWindow;
 import com.smartcampus.resource.Resource;
 import com.smartcampus.resource.ResourceRepository;
-import com.smartcampus.resource.ResourceService;
+import com.smartcampus.resource.ResourceStatus;
 import com.smartcampus.resource.ResourceType;
 import com.smartcampus.user.User;
 import com.smartcampus.user.UserRepository;
@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,9 +50,6 @@ class BookingServiceImplTest {
     private ResourceRepository resourceRepository;
 
     @Mock
-    private ResourceService resourceService;
-
-    @Mock
     private NotificationService notificationService;
 
     private BookingServiceImpl bookingService;
@@ -62,7 +60,6 @@ class BookingServiceImplTest {
                 bookingRepository,
                 userRepository,
                 resourceRepository,
-                resourceService,
                 notificationService
         );
     }
@@ -110,7 +107,8 @@ class BookingServiceImplTest {
         Booking booking = newBooking(bookingId, UUID.randomUUID(), BookingStatus.PENDING);
 
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
-        when(resourceService.isResourceBookable(booking.getResource().getId())).thenReturn(true);
+        when(resourceRepository.findByIdAndDeletedFalse(booking.getResource().getId()))
+            .thenReturn(Optional.of(booking.getResource()));
         when(bookingRepository.findConflictingBookingsExcludingId(
                 eq(booking.getResource().getId()),
                 eq(booking.getBookingDate()),
@@ -147,10 +145,11 @@ class BookingServiceImplTest {
         resource.setId(resourceId);
         resource.setType(ResourceType.ROOM);
         resource.setCapacity(30);
+        resource.setStatus(ResourceStatus.ACTIVE);
+        resource.setDeleted(false);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(resourceRepository.findByIdAndDeletedFalse(resourceId)).thenReturn(Optional.of(resource));
-        when(resourceService.isResourceBookable(resourceId)).thenReturn(true);
 
         assertThrows(BookingBadRequestException.class,
             () -> bookingService.createBooking(
@@ -178,6 +177,8 @@ class BookingServiceImplTest {
         resource.setId(resourceId);
         resource.setType(ResourceType.ROOM);
         resource.setCapacity(30);
+        resource.setStatus(ResourceStatus.ACTIVE);
+        resource.setDeleted(false);
 
         AvailabilityWindow mondayWindow = new AvailabilityWindow();
         mondayWindow.setOpen("08:00");
@@ -191,7 +192,6 @@ class BookingServiceImplTest {
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(resourceRepository.findByIdAndDeletedFalse(resourceId)).thenReturn(Optional.of(resource));
-        when(resourceService.isResourceBookable(resourceId)).thenReturn(true);
 
         assertThrows(BookingBadRequestException.class,
             () -> bookingService.createBooking(
@@ -207,16 +207,47 @@ class BookingServiceImplTest {
             ));
         }
 
+    @Test
+    void autoRejectPendingForResourceOutOfService_shouldRejectAllPendingAndNotify() {
+        UUID resourceId = UUID.randomUUID();
+        Booking first = newBooking(UUID.randomUUID(), UUID.randomUUID(), BookingStatus.PENDING);
+        first.setResource(newResource(resourceId));
+
+        Booking second = newBooking(UUID.randomUUID(), UUID.randomUUID(), BookingStatus.PENDING);
+        second.setResource(newResource(resourceId));
+
+        when(bookingRepository.findByResource_IdAndStatus(resourceId, BookingStatus.PENDING))
+                .thenReturn(List.of(first, second));
+
+        int updatedCount = bookingService.autoRejectPendingForResourceOutOfService(resourceId);
+
+        org.junit.jupiter.api.Assertions.assertEquals(2, updatedCount);
+        org.junit.jupiter.api.Assertions.assertEquals(BookingStatus.REJECTED, first.getStatus());
+        org.junit.jupiter.api.Assertions.assertEquals("Resource is out of service.", first.getRejectionReason());
+        org.junit.jupiter.api.Assertions.assertEquals(BookingStatus.REJECTED, second.getStatus());
+        org.junit.jupiter.api.Assertions.assertEquals("Resource is out of service.", second.getRejectionReason());
+
+        verify(bookingRepository).saveAll(List.of(first, second));
+        verify(notificationService, times(2)).sendBookingNotification(any(), any(), eq(false), eq("Resource is out of service."));
+    }
+
+    private Resource newResource(UUID id) {
+        Resource resource = new Resource();
+        resource.setId(id);
+        resource.setName("Lab A");
+        resource.setType(ResourceType.LAB);
+        resource.setCapacity(40);
+        resource.setStatus(ResourceStatus.ACTIVE);
+        resource.setDeleted(false);
+        return resource;
+    }
+
     private Booking newBooking(UUID bookingId, UUID ownerId, BookingStatus status) {
         User owner = new User();
         owner.setId(ownerId);
         owner.setName("Owner");
 
-        Resource resource = new Resource();
-        resource.setId(UUID.randomUUID());
-        resource.setName("Lab A");
-        resource.setType(ResourceType.LAB);
-        resource.setCapacity(40);
+        Resource resource = newResource(UUID.randomUUID());
 
         Booking booking = new Booking();
         booking.setId(bookingId);

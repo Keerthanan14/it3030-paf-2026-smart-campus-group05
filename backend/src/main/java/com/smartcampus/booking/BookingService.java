@@ -28,4 +28,10 @@ public interface BookingService {
     BookingResponse rejectBooking(UUID bookingId, RejectBookingRequest request);
 
     BookingResponse cancelBooking(UUID bookingId, UUID requesterUserId);
+
+    int autoRejectPendingForResourceOutOfService(UUID resourceId);
+
+    byte[] exportBookingsPdf(BookingStatus status, UUID resourceId, LocalDate from, LocalDate to);
+
+    byte[] exportBookingsExcel(BookingStatus status, UUID resourceId, LocalDate from, LocalDate to);
 }

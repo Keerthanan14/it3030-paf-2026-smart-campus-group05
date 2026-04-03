@@ -6,7 +6,9 @@ import com.smartcampus.booking.dto.PaginatedBookingResponse;
 import com.smartcampus.booking.dto.RejectBookingRequest;
 import com.smartcampus.security.AuthUserPrincipal;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -86,5 +88,35 @@ public class BookingController {
             @PathVariable UUID id,
             @AuthenticationPrincipal AuthUserPrincipal principal) {
         return ResponseEntity.ok(bookingService.cancelBooking(id, principal.userId()));
+    }
+
+    @GetMapping("/export/pdf")
+    public ResponseEntity<byte[]> exportBookingsPdf(
+            @RequestParam(required = false) BookingStatus status,
+            @RequestParam(required = false) UUID resourceId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        byte[] pdf = bookingService.exportBookingsPdf(status, resourceId, from, to);
+
+        String fileName = "bookings-report-" + LocalDate.now() + ".pdf";
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(pdf);
+    }
+
+    @GetMapping("/export/excel")
+    public ResponseEntity<byte[]> exportBookingsExcel(
+            @RequestParam(required = false) BookingStatus status,
+            @RequestParam(required = false) UUID resourceId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        byte[] excel = bookingService.exportBookingsExcel(status, resourceId, from, to);
+
+        String fileName = "bookings-report-" + LocalDate.now() + ".xlsx";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(excel);
     }
 }

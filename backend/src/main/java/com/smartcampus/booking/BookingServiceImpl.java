@@ -4,6 +4,13 @@ import com.smartcampus.booking.dto.BookingResponse;
 import com.smartcampus.booking.dto.CreateBookingRequest;
 import com.smartcampus.booking.dto.PaginatedBookingResponse;
 import com.smartcampus.booking.dto.RejectBookingRequest;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.UnitValue;
 import com.smartcampus.exception.BookingBadRequestException;
 import com.smartcampus.exception.BookingConflictException;
 import com.smartcampus.exception.BookingForbiddenException;
@@ -13,10 +20,16 @@ import com.smartcampus.notification.NotificationService;
 import com.smartcampus.resource.AvailabilityWindow;
 import com.smartcampus.resource.Resource;
 import com.smartcampus.resource.ResourceRepository;
-import com.smartcampus.resource.ResourceService;
+import com.smartcampus.resource.ResourceStatus;
 import com.smartcampus.resource.ResourceType;
 import com.smartcampus.user.User;
 import com.smartcampus.user.UserRepository;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -24,9 +37,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -34,21 +50,20 @@ import java.util.UUID;
 @Service
 public class BookingServiceImpl implements BookingService {
 
+    private static final String OUT_OF_SERVICE_REJECTION_REASON = "Resource is out of service.";
+
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
-    private final ResourceService resourceService;
     private final NotificationService notificationService;
 
     public BookingServiceImpl(BookingRepository bookingRepository,
                               UserRepository userRepository,
                               ResourceRepository resourceRepository,
-                              ResourceService resourceService,
                               NotificationService notificationService) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
-        this.resourceService = resourceService;
         this.notificationService = notificationService;
     }
 
@@ -119,8 +134,8 @@ public class BookingServiceImpl implements BookingService {
         Resource resource = resourceRepository.findByIdAndDeletedFalse(request.resourceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Resource not found for id: " + request.resourceId()));
 
-        if (!resourceService.isResourceBookable(resource.getId())) {
-            throw new BookingConflictException("Resource is out of service.");
+        if (!isResourceBookable(resource)) {
+            throw new BookingConflictException(OUT_OF_SERVICE_REJECTION_REASON);
         }
 
         validateAttendeesCount(resource, request.attendeesCount());
@@ -162,12 +177,15 @@ public class BookingServiceImpl implements BookingService {
             throw new BookingBadRequestException("Only PENDING bookings can be approved");
         }
 
-        if (!resourceService.isResourceBookable(booking.getResource().getId())) {
+        Resource latestResource = resourceRepository.findByIdAndDeletedFalse(booking.getResource().getId())
+            .orElseThrow(() -> new ResourceNotFoundException("Resource not found for id: " + booking.getResource().getId()));
+
+        if (!isResourceBookable(latestResource)) {
             throw new BookingConflictException("Cannot approve booking. Resource is out of service.");
         }
 
         validateWithinAvailabilityWindow(
-            booking.getResource(),
+            latestResource,
             booking.getBookingDate(),
             booking.getStartTime(),
             booking.getEndTime()
@@ -233,8 +251,169 @@ public class BookingServiceImpl implements BookingService {
         return toResponse(saved);
     }
 
+    @Override
+    @Transactional
+    public int autoRejectPendingForResourceOutOfService(UUID resourceId) {
+        List<Booking> pendingBookings = bookingRepository.findByResource_IdAndStatus(resourceId, BookingStatus.PENDING);
+        if (pendingBookings.isEmpty()) {
+            return 0;
+        }
+
+        for (Booking booking : pendingBookings) {
+            booking.setStatus(BookingStatus.REJECTED);
+            booking.setRejectionReason(OUT_OF_SERVICE_REJECTION_REASON);
+            notificationService.sendBookingNotification(
+                    booking.getUser().getId(),
+                    booking.getId(),
+                    false,
+                    OUT_OF_SERVICE_REJECTION_REASON
+            );
+        }
+
+        bookingRepository.saveAll(pendingBookings);
+        return pendingBookings.size();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportBookingsPdf(BookingStatus status, UUID resourceId, LocalDate from, LocalDate to) {
+        validateExportFilters(from, to);
+        List<Booking> bookings = findBookingsForExport(status, resourceId, from, to);
+
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            PdfWriter writer = new PdfWriter(outputStream);
+            PdfDocument pdf = new PdfDocument(writer);
+            Document document = new Document(pdf);
+
+            String rangeLabel = (from == null && to == null)
+                    ? "All Dates"
+                    : (from == null ? "Until " + to : (to == null ? "From " + from : from + " to " + to));
+
+            document.add(new Paragraph("Booking Report").setBold().setFontSize(16));
+            document.add(new Paragraph("Date Range: " + rangeLabel));
+            document.add(new Paragraph("Generated At: " + java.time.LocalDateTime.now()));
+            document.add(new Paragraph(" "));
+
+            Table table = new Table(UnitValue.createPercentArray(new float[]{1.3f, 1.4f, 1.4f, 1f, 0.8f, 0.8f, 1.6f, 0.8f, 1f, 1.6f}))
+                    .useAllAvailableWidth();
+
+            addPdfHeaderCell(table, "Booking ID");
+            addPdfHeaderCell(table, "User");
+            addPdfHeaderCell(table, "Resource");
+            addPdfHeaderCell(table, "Date");
+            addPdfHeaderCell(table, "Start");
+            addPdfHeaderCell(table, "End");
+            addPdfHeaderCell(table, "Purpose");
+            addPdfHeaderCell(table, "Attendees");
+            addPdfHeaderCell(table, "Status");
+            addPdfHeaderCell(table, "Rejection Reason");
+
+            for (Booking booking : bookings) {
+                table.addCell(trimBookingId(booking.getId()));
+                table.addCell(booking.getUser().getName());
+                table.addCell(booking.getResource().getName());
+                table.addCell(String.valueOf(booking.getBookingDate()));
+                table.addCell(String.valueOf(booking.getStartTime()));
+                table.addCell(String.valueOf(booking.getEndTime()));
+                table.addCell(booking.getPurpose());
+                table.addCell(booking.getAttendeesCount() == null ? "-" : String.valueOf(booking.getAttendeesCount()));
+                table.addCell(booking.getStatus().name());
+                table.addCell(booking.getRejectionReason() == null ? "-" : booking.getRejectionReason());
+            }
+
+            document.add(table);
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("Total bookings: " + bookings.size()).setBold());
+            document.close();
+
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to generate PDF export", ex);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportBookingsExcel(BookingStatus status, UUID resourceId, LocalDate from, LocalDate to) {
+        validateExportFilters(from, to);
+        List<Booking> bookings = findBookingsForExport(status, resourceId, from, to);
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Bookings Report");
+            String[] headers = new String[]{
+                    "Booking ID", "User", "Resource", "Date", "Start", "End", "Purpose", "Attendees", "Status", "Rejection Reason"
+            };
+
+            CellStyle headerStyle = workbook.createCellStyle();
+            XSSFFont headerFont = (XSSFFont) workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                org.apache.poi.ss.usermodel.Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int rowIndex = 1;
+            for (Booking booking : bookings) {
+                Row row = sheet.createRow(rowIndex++);
+                row.createCell(0).setCellValue(trimBookingId(booking.getId()));
+                row.createCell(1).setCellValue(booking.getUser().getName());
+                row.createCell(2).setCellValue(booking.getResource().getName());
+                row.createCell(3).setCellValue(String.valueOf(booking.getBookingDate()));
+                row.createCell(4).setCellValue(String.valueOf(booking.getStartTime()));
+                row.createCell(5).setCellValue(String.valueOf(booking.getEndTime()));
+                row.createCell(6).setCellValue(booking.getPurpose());
+                row.createCell(7).setCellValue(booking.getAttendeesCount() == null ? "-" : String.valueOf(booking.getAttendeesCount()));
+                row.createCell(8).setCellValue(booking.getStatus().name());
+                row.createCell(9).setCellValue(booking.getRejectionReason() == null ? "-" : booking.getRejectionReason());
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to generate Excel export", ex);
+        }
+    }
+
     private boolean isAdminRole(String role) {
         return "ADMIN".equalsIgnoreCase(role) || "ROLE_ADMIN".equalsIgnoreCase(role);
+    }
+
+    private List<Booking> findBookingsForExport(BookingStatus status, UUID resourceId, LocalDate from, LocalDate to) {
+        Specification<Booking> spec = Specification
+                .where(BookingSpecifications.hasStatus(status))
+                .and(BookingSpecifications.hasResourceId(resourceId))
+                .and(BookingSpecifications.bookingDateFrom(from))
+                .and(BookingSpecifications.bookingDateTo(to));
+
+        Sort sort = Sort.by(Sort.Direction.ASC, "bookingDate").and(Sort.by(Sort.Direction.ASC, "startTime"));
+        return bookingRepository.findAll(spec, sort);
+    }
+
+    private void validateExportFilters(LocalDate from, LocalDate to) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new BookingBadRequestException("from date must be before or equal to to date");
+        }
+    }
+
+    private void addPdfHeaderCell(Table table, String value) {
+        table.addHeaderCell(new Cell().add(new Paragraph(value).setBold()));
+    }
+
+    private String trimBookingId(UUID bookingId) {
+        String id = bookingId.toString();
+        return id.substring(0, Math.min(8, id.length()));
+    }
+
+    private boolean isResourceBookable(Resource resource) {
+        return resource.getStatus() == ResourceStatus.ACTIVE && !resource.isDeleted();
     }
 
     private void validateAttendeesCount(Resource resource, Integer attendeesCount) {

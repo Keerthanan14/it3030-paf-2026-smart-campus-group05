@@ -94,12 +94,16 @@ This document lists everything Module B needs from other modules so Booking can 
 - Phase 6: End-to-end test evidence prepared for viva
 
 ## Final Acceptance Checklist
-- [ ] Create booking blocked for OUT_OF_SERVICE resources
-- [ ] Approve booking blocked when resource turns OUT_OF_SERVICE
-- [ ] Pending bookings auto-reject on resource OUT_OF_SERVICE
-- [ ] Auto-rejection reason stored exactly: `Resource is out of service.`
-- [ ] Notifications sent for approve/reject/auto-reject
-- [ ] Audit logs written for booking status transitions
-- [ ] Exports include rejected records and rejection reasons
-- [ ] USER data isolation verified
-- [ ] Admin filters and actions verified
+- [x] Create booking blocked for OUT_OF_SERVICE resources
+- [x] Approve booking blocked when resource turns OUT_OF_SERVICE
+- [x] Pending bookings auto-reject on resource OUT_OF_SERVICE
+- [x] Auto-rejection reason stored exactly: `Resource is out of service.`
+- [x] Notifications sent for approve/reject/auto-reject
+- [ ] Audit logs written for booking status transitions (Pending - depends on Admin/Audit module implementation)
+- [ ] Exports include rejected records and rejection reasons (Pending - Phase 4)
+- [x] USER data isolation verified
+- [x] Admin filters and actions verified
+
+## Current Status Note
+- Booking side integration is complete for resource checks, conflict handling, ownership rules, and notification triggers.
+- Admin audit logging is an external dependency and will be completed once the Admin/Audit module service is available.
