@@ -289,7 +289,7 @@ public class BookingServiceImpl implements BookingService {
                     ? "All Dates"
                     : (from == null ? "Until " + to : (to == null ? "From " + from : from + " to " + to));
 
-            document.add(new Paragraph("Booking Report").setBold().setFontSize(16));
+            document.add(new Paragraph("Booking Report").setFontSize(16));
             document.add(new Paragraph("Date Range: " + rangeLabel));
             document.add(new Paragraph("Generated At: " + java.time.LocalDateTime.now()));
             document.add(new Paragraph(" "));
@@ -323,7 +323,7 @@ public class BookingServiceImpl implements BookingService {
 
             document.add(table);
             document.add(new Paragraph(" "));
-            document.add(new Paragraph("Total bookings: " + bookings.size()).setBold());
+            document.add(new Paragraph("Total bookings: " + bookings.size()));
             document.close();
 
             return outputStream.toByteArray();
@@ -404,7 +404,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void addPdfHeaderCell(Table table, String value) {
-        table.addHeaderCell(new Cell().add(new Paragraph(value).setBold()));
+        table.addHeaderCell(new Cell().add(new Paragraph(value)));
     }
 
     private String trimBookingId(UUID bookingId) {
