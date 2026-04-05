@@ -7,6 +7,7 @@ import com.smartcampus.ticket.dto.PaginatedTicketResponse;
 import com.smartcampus.ticket.dto.TicketResponse;
 import com.smartcampus.ticket.dto.UpdateTicketStatusRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,10 +16,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -62,11 +66,20 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.getTicketById(id, principal.userId(), principal.role()));
     }
 
-    @PostMapping
-    public ResponseEntity<TicketResponse> createTicket(
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<TicketResponse> createTicketJson(
             @Valid @RequestBody CreateTicketRequest request,
             @AuthenticationPrincipal AuthUserPrincipal principal) {
-        TicketResponse response = ticketService.createTicket(request, principal.userId(), principal.role());
+        TicketResponse response = ticketService.createTicket(request, null, principal.userId(), principal.role());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping(consumes = {"multipart/form-data"})
+    public ResponseEntity<TicketResponse> createTicketMultipart(
+            @Valid @RequestPart("request") CreateTicketRequest request,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @AuthenticationPrincipal AuthUserPrincipal principal) {
+        TicketResponse response = ticketService.createTicket(request, images, principal.userId(), principal.role());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

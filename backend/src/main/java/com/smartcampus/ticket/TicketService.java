@@ -5,7 +5,9 @@ import com.smartcampus.ticket.dto.CreateTicketRequest;
 import com.smartcampus.ticket.dto.PaginatedTicketResponse;
 import com.smartcampus.ticket.dto.TicketResponse;
 import com.smartcampus.ticket.dto.UpdateTicketStatusRequest;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface TicketService {
@@ -21,7 +23,10 @@ public interface TicketService {
 
     TicketResponse getTicketById(UUID ticketId, UUID requesterUserId, String requesterRole);
 
-    TicketResponse createTicket(CreateTicketRequest request, UUID requesterUserId, String requesterRole);
+    TicketResponse createTicket(CreateTicketRequest request,
+                                List<MultipartFile> images,
+                                UUID requesterUserId,
+                                String requesterRole);
 
     TicketResponse updateTicketStatus(UUID ticketId,
                                       UpdateTicketStatusRequest request,

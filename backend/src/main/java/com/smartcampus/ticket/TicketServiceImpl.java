@@ -5,9 +5,15 @@ import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.exception.TicketNotFoundException;
 import com.smartcampus.resource.Resource;
 import com.smartcampus.resource.ResourceRepository;
+import com.smartcampus.ticket.attachment.FileStorageService;
+import com.smartcampus.ticket.attachment.TicketAttachment;
+import com.smartcampus.ticket.attachment.TicketAttachmentRepository;
+import com.smartcampus.ticket.comment.CommentRepository;
 import com.smartcampus.ticket.dto.AssignTicketRequest;
+import com.smartcampus.ticket.dto.CommentResponse;
 import com.smartcampus.ticket.dto.CreateTicketRequest;
 import com.smartcampus.ticket.dto.PaginatedTicketResponse;
+import com.smartcampus.ticket.dto.TicketAttachmentResponse;
 import com.smartcampus.ticket.dto.TicketResponse;
 import com.smartcampus.ticket.dto.UpdateTicketStatusRequest;
 import com.smartcampus.user.Role;
@@ -19,8 +25,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -29,13 +38,22 @@ public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
+    private final TicketAttachmentRepository ticketAttachmentRepository;
+    private final CommentRepository commentRepository;
+    private final FileStorageService fileStorageService;
 
     public TicketServiceImpl(TicketRepository ticketRepository,
                              UserRepository userRepository,
-                             ResourceRepository resourceRepository) {
+                             ResourceRepository resourceRepository,
+                             TicketAttachmentRepository ticketAttachmentRepository,
+                             CommentRepository commentRepository,
+                             FileStorageService fileStorageService) {
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
+        this.ticketAttachmentRepository = ticketAttachmentRepository;
+        this.commentRepository = commentRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     @Override
@@ -88,7 +106,10 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
-    public TicketResponse createTicket(CreateTicketRequest request, UUID requesterUserId, String requesterRole) {
+    public TicketResponse createTicket(CreateTicketRequest request,
+                                       List<MultipartFile> images,
+                                       UUID requesterUserId,
+                                       String requesterRole) {
         if (!isAdminRole(requesterRole) && !isStudentRole(requesterRole)) {
             throw new ForbiddenException("Only students and admins can create tickets");
         }
@@ -111,7 +132,10 @@ public class TicketServiceImpl implements TicketService {
         ticket.setStatus(TicketStatus.OPEN);
         ticket.setPreferredContact(request.preferredContact());
 
-        return toResponse(ticketRepository.save(ticket));
+        Ticket savedTicket = ticketRepository.save(ticket);
+        saveAttachments(savedTicket, images);
+
+        return toResponse(savedTicket);
     }
 
     @Override
@@ -235,6 +259,30 @@ public class TicketServiceImpl implements TicketService {
     }
 
     private TicketResponse toResponse(Ticket ticket) {
+        List<TicketAttachmentResponse> attachments = ticketAttachmentRepository.findByTicket_Id(ticket.getId())
+            .stream()
+            .map(attachment -> new TicketAttachmentResponse(
+                attachment.getId(),
+                attachment.getFileName(),
+                attachment.getFileUrl(),
+                attachment.getFileSize(),
+                attachment.getCreatedAt()
+            ))
+            .toList();
+
+        List<CommentResponse> comments = commentRepository.findByTicket_IdOrderByCreatedAtAsc(ticket.getId())
+            .stream()
+            .map(comment -> new CommentResponse(
+                comment.getId(),
+                comment.getTicket().getId(),
+                comment.getUser().getId(),
+                comment.getUser().getName(),
+                comment.getContent(),
+                comment.getCreatedAt(),
+                comment.getUpdatedAt()
+            ))
+            .toList();
+
         return new TicketResponse(
                 ticket.getId(),
                 ticket.getUser().getId(),
@@ -252,9 +300,42 @@ public class TicketServiceImpl implements TicketService {
                 ticket.getPreferredContact(),
                 ticket.getFirstResponseAt(),
                 ticket.getResolvedAt(),
+                attachments,
+                comments,
                 ticket.getCreatedAt(),
                 ticket.getUpdatedAt()
         );
+    }
+
+    private void saveAttachments(Ticket ticket, List<MultipartFile> images) {
+        if (images == null || images.isEmpty()) {
+            return;
+        }
+
+        List<MultipartFile> nonEmpty = images.stream().filter(file -> file != null && !file.isEmpty()).toList();
+        if (nonEmpty.isEmpty()) {
+            return;
+        }
+
+        if (nonEmpty.size() > 3) {
+            throw new IllegalArgumentException("A maximum of 3 images can be uploaded");
+        }
+
+        List<TicketAttachment> attachments = nonEmpty.stream()
+                .map(file -> {
+                    FileStorageService.StoredFile stored = fileStorageService.storeTicketImage(file);
+
+                    TicketAttachment attachment = new TicketAttachment();
+                    attachment.setTicket(ticket);
+                    attachment.setFileName(stored.originalFileName());
+                    attachment.setStoredName(stored.storedName());
+                    attachment.setFileUrl(stored.fileUrl());
+                    attachment.setFileSize(stored.size());
+                    return attachment;
+                })
+                .toList();
+
+        ticketAttachmentRepository.saveAll(attachments);
     }
 
     private boolean isAdminRole(String role) {

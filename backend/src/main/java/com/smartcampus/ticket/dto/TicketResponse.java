@@ -4,6 +4,7 @@ import com.smartcampus.ticket.TicketPriority;
 import com.smartcampus.ticket.TicketStatus;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record TicketResponse(
@@ -23,6 +24,8 @@ public record TicketResponse(
         String preferredContact,
         LocalDateTime firstResponseAt,
         LocalDateTime resolvedAt,
+        List<TicketAttachmentResponse> attachments,
+        List<CommentResponse> comments,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
