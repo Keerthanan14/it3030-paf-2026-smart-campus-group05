@@ -1,5 +1,6 @@
 package com.smartcampus.ticket;
 
+import com.smartcampus.audit.AuditLogService;
 import com.smartcampus.exception.ForbiddenException;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.exception.TicketNotFoundException;
@@ -27,9 +28,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -41,19 +43,22 @@ public class TicketServiceImpl implements TicketService {
     private final TicketAttachmentRepository ticketAttachmentRepository;
     private final CommentRepository commentRepository;
     private final FileStorageService fileStorageService;
+    private final AuditLogService auditLogService;
 
     public TicketServiceImpl(TicketRepository ticketRepository,
                              UserRepository userRepository,
                              ResourceRepository resourceRepository,
                              TicketAttachmentRepository ticketAttachmentRepository,
                              CommentRepository commentRepository,
-                             FileStorageService fileStorageService) {
+                             FileStorageService fileStorageService,
+                             AuditLogService auditLogService) {
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
         this.ticketAttachmentRepository = ticketAttachmentRepository;
         this.commentRepository = commentRepository;
         this.fileStorageService = fileStorageService;
+        this.auditLogService = auditLogService;
     }
 
     @Override
@@ -135,6 +140,19 @@ public class TicketServiceImpl implements TicketService {
         Ticket savedTicket = ticketRepository.save(ticket);
         saveAttachments(savedTicket, images);
 
+        auditLogService.logAction(
+            requesterUserId,
+            "CREATE",
+            "TICKET",
+            savedTicket.getId(),
+            null,
+            Map.of(
+                "status", savedTicket.getStatus().name(),
+                "priority", savedTicket.getPriority().name(),
+                "category", savedTicket.getCategory()
+            )
+        );
+
         return toResponse(savedTicket);
     }
 
@@ -166,6 +184,8 @@ public class TicketServiceImpl implements TicketService {
             throw new IllegalArgumentException("rejectionReason is required when status is REJECTED");
         }
 
+        TicketStatus previousStatus = ticket.getStatus();
+
         if (ticket.getFirstResponseAt() == null && ticket.getStatus() == TicketStatus.OPEN && request.status() != TicketStatus.OPEN) {
             ticket.setFirstResponseAt(LocalDateTime.now());
         }
@@ -186,7 +206,18 @@ public class TicketServiceImpl implements TicketService {
             ticket.setRejectionReason(null);
         }
 
-        return toResponse(ticketRepository.save(ticket));
+        Ticket saved = ticketRepository.save(ticket);
+
+        auditLogService.logAction(
+                requesterUserId,
+                "STATUS_CHANGE",
+                "TICKET",
+                saved.getId(),
+                Map.of("status", previousStatus.name()),
+                Map.of("status", saved.getStatus().name())
+        );
+
+        return toResponse(saved);
     }
 
     @Override
@@ -202,9 +233,21 @@ public class TicketServiceImpl implements TicketService {
             throw new IllegalArgumentException("Provided user is not a technician");
         }
 
+        UUID previousAssignedTo = ticket.getAssignedTo() == null ? null : ticket.getAssignedTo().getId();
         ticket.setAssignedTo(technician);
 
-        return toResponse(ticketRepository.save(ticket));
+        Ticket saved = ticketRepository.save(ticket);
+
+        auditLogService.logAction(
+            null,
+            "ASSIGN",
+            "TICKET",
+            saved.getId(),
+            Map.of("assignedTo", previousAssignedTo == null ? "UNASSIGNED" : previousAssignedTo.toString()),
+            Map.of("assignedTo", saved.getAssignedTo().getId().toString())
+        );
+
+        return toResponse(saved);
     }
 
     private void validatePageParams(int page, int size) {
@@ -300,11 +343,48 @@ public class TicketServiceImpl implements TicketService {
                 ticket.getPreferredContact(),
                 ticket.getFirstResponseAt(),
                 ticket.getResolvedAt(),
+                computeTimeToFirstResponse(ticket),
+                computeTimeToResolution(ticket),
+                isFirstResponseBreached(ticket),
+                isResolutionBreached(ticket),
                 attachments,
                 comments,
                 ticket.getCreatedAt(),
                 ticket.getUpdatedAt()
         );
+    }
+
+    private String computeTimeToFirstResponse(Ticket ticket) {
+        if (ticket.getFirstResponseAt() == null) {
+            return null;
+        }
+        return formatDuration(Duration.between(ticket.getCreatedAt(), ticket.getFirstResponseAt()));
+    }
+
+    private String computeTimeToResolution(Ticket ticket) {
+        if (ticket.getResolvedAt() == null) {
+            return null;
+        }
+        return formatDuration(Duration.between(ticket.getCreatedAt(), ticket.getResolvedAt()));
+    }
+
+    private boolean isFirstResponseBreached(Ticket ticket) {
+        LocalDateTime end = ticket.getFirstResponseAt() == null ? LocalDateTime.now() : ticket.getFirstResponseAt();
+        long hours = Duration.between(ticket.getCreatedAt(), end).toHours();
+        return hours > TicketSlaConstants.FIRST_RESPONSE_TARGET_HOURS;
+    }
+
+    private boolean isResolutionBreached(Ticket ticket) {
+        LocalDateTime end = ticket.getResolvedAt() == null ? LocalDateTime.now() : ticket.getResolvedAt();
+        long hours = Duration.between(ticket.getCreatedAt(), end).toHours();
+        return hours > TicketSlaConstants.RESOLUTION_TARGET_HOURS;
+    }
+
+    private String formatDuration(Duration duration) {
+        long minutes = duration.toMinutes();
+        long hoursPart = minutes / 60;
+        long minutesPart = minutes % 60;
+        return hoursPart + "h " + minutesPart + "m";
     }
 
     private void saveAttachments(Ticket ticket, List<MultipartFile> images) {

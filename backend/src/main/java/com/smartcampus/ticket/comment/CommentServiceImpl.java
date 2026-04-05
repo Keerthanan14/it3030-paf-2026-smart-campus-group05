@@ -1,5 +1,6 @@
 package com.smartcampus.ticket.comment;
 
+import com.smartcampus.audit.AuditLogService;
 import com.smartcampus.exception.ForbiddenException;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.exception.TicketNotFoundException;
@@ -13,6 +14,7 @@ import com.smartcampus.user.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -21,13 +23,16 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
+    private final AuditLogService auditLogService;
 
     public CommentServiceImpl(CommentRepository commentRepository,
                               TicketRepository ticketRepository,
-                              UserRepository userRepository) {
+                              UserRepository userRepository,
+                              AuditLogService auditLogService) {
         this.commentRepository = commentRepository;
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
+        this.auditLogService = auditLogService;
     }
 
     @Override
@@ -46,7 +51,21 @@ public class CommentServiceImpl implements CommentService {
         comment.setUser(user);
         comment.setContent(request.content().trim());
 
-        return toResponse(commentRepository.save(comment));
+        Comment saved = commentRepository.save(comment);
+
+        auditLogService.logAction(
+            requesterUserId,
+            "CREATE",
+            "COMMENT",
+            saved.getId(),
+            null,
+            Map.of(
+                "ticketId", saved.getTicket().getId().toString(),
+                "content", saved.getContent()
+            )
+        );
+
+        return toResponse(saved);
     }
 
     @Override
@@ -66,9 +85,21 @@ public class CommentServiceImpl implements CommentService {
             throw new ForbiddenException("Only the comment owner can edit this comment");
         }
 
+        String oldContent = comment.getContent();
         comment.setContent(request.content().trim());
 
-        return toResponse(commentRepository.save(comment));
+        Comment saved = commentRepository.save(comment);
+
+        auditLogService.logAction(
+            requesterUserId,
+            "UPDATE",
+            "COMMENT",
+            saved.getId(),
+            Map.of("content", oldContent),
+            Map.of("content", saved.getContent())
+        );
+
+        return toResponse(saved);
     }
 
     @Override
@@ -87,6 +118,15 @@ public class CommentServiceImpl implements CommentService {
         if (!isOwner && !isAdmin) {
             throw new ForbiddenException("Only the comment owner or an admin can delete this comment");
         }
+
+        auditLogService.logAction(
+                requesterUserId,
+                "DELETE",
+                "COMMENT",
+                comment.getId(),
+                Map.of("content", comment.getContent()),
+                Map.of("deleted", true)
+        );
 
         commentRepository.delete(comment);
     }
