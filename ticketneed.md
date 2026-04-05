@@ -114,18 +114,13 @@ Required from frontend core:
 ## Integration Checklist
 Mark complete only after all are true.
 
-Status legend:
-- DONE = Implemented and verified in current module.
-- PARTIAL = Implemented in Module C, but cross-module confirmation still pending.
-- PENDING = Not yet completed.
-
-- [x] Resource existence validation integrated in ticket create flow. (DONE)
-- [x] Role checks aligned with auth module. (DONE)
-- [x] Technician assignment validates TECHNICIAN role. (DONE)
-- [x] Notification events fire for status and comments. (DONE)
-- [ ] SLA fields shown in frontend pages. (PENDING)
-- [ ] Audit action/entity naming aligned across modules. (PARTIAL)
-- [ ] Cross-module test scenarios documented in Postman. (PENDING)
+- [ ] Resource existence validation integrated in ticket create flow.
+- [ ] Role checks aligned with auth module.
+- [ ] Technician assignment validates TECHNICIAN role.
+- [ ] Notification events fire for status and comments.
+- [ ] SLA fields shown in frontend pages.
+- [ ] Audit action/entity naming aligned across modules.
+- [ ] Cross-module test scenarios documented in Postman.
 
 ## Suggested Cross-Module Test Scenarios
 1. Create ticket with valid resourceId -> success.

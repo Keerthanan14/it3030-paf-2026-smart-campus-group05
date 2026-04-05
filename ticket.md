@@ -156,6 +156,135 @@ Exit criteria:
 - End-to-end flows run without manual data fixes.
 - API behavior is consistent with project rubric and PRD.
 
+## Frontend Ticket Integration (First Priority)
+Goal: complete Member 3 frontend ticket flow in clear phases while following project frontend rules.
+
+### Frontend Phase F1 - API Layer and Types
+Goal: define ticket API service contracts before UI implementation.
+
+Deliverables:
+1. Implement `src/core/api/ticketApi.ts`:
+- list tickets with filters (status, priority, category, assignedTo, slaBreached, page, size)
+- get ticket by id
+- create ticket (json and multipart)
+- update ticket status
+- assign technician
+- comment create/update/delete
+
+2. Update/verify `src/types/ticket.ts`:
+- ticket list item and detail contracts
+- attachment and comment contracts
+- SLA fields (`timeToFirstResponse`, `timeToResolution`, `firstResponseBreached`, `resolutionBreached`)
+- links contract for backend action links
+
+Exit criteria:
+- No direct ticket API calls from pages/components.
+- All ticket requests are typed and centralized in `core/api`.
+
+### Frontend Phase F2 - Feature Hooks and State
+Goal: move reusable ticket logic to hooks/store and keep pages thin.
+
+Deliverables:
+1. Add ticket hooks under `src/features/ticket/hooks/`:
+- `useTicketsList`
+- `useTicketDetail`
+- `useTicketActions` (status update, assignment)
+- `useTicketComments`
+
+2. Use `src/core/store/ticketStore.ts` only for truly shared ticket state:
+- list filters/pagination cache
+- selected ticket id if needed across views
+
+3. Keep business logic out of pages:
+- loading/error/success flows managed in hooks
+
+Exit criteria:
+- Pages only compose UI and call hooks.
+- No duplicated ticket logic across student/technician/admin pages.
+
+### Frontend Phase F3 - Page Wiring (Thin Pages)
+Goal: wire all Member 3 pages to backend through hooks.
+
+Deliverables:
+1. Student tickets page:
+- load own tickets
+- open detail view
+- add/edit/delete own comments
+
+2. Technician tickets page:
+- load assigned tickets
+- update allowed statuses
+- comment on assigned tickets
+
+3. Admin tickets page:
+- load all tickets with filters
+- assign technician
+- update status including reject/close
+
+4. Admin audit view integration:
+- consume audit log endpoint with filters and pagination
+
+Exit criteria:
+- Student, technician, and admin ticket flows work end-to-end.
+- Role-based action visibility matches backend permissions.
+
+### Frontend Phase F4 - SLA and UX Hardening
+Goal: complete SLA visibility and user feedback quality.
+
+Deliverables:
+1. SLA indicators in ticket list and detail:
+- show elapsed time text
+- show breached/within-SLA badges
+
+2. File upload UX for ticket create:
+- max 3 images
+- type/size validation hints
+- preview selected files
+
+3. Comment UX polish:
+- inline edit state
+- delete confirmation
+- optimistic or immediate refresh behavior
+
+4. Error handling consistency:
+- use shared toast/error UI
+- map backend validation messages cleanly
+
+Exit criteria:
+- SLA data is clearly visible on all ticket pages.
+- Ticket UI behavior is stable and demo-ready.
+
+### Frontend Phase F5 - Final Integration Checks
+Goal: confirm frontend and backend contracts are fully aligned.
+
+Deliverables:
+1. Verify filters and query params align with backend.
+2. Verify ticket action buttons use backend-provided links/permissions.
+3. Verify notification-driven refresh for status/comment updates (where applicable).
+4. Add a short frontend test checklist in project docs.
+
+Exit criteria:
+- Frontend ticket integration is complete and consistent with backend rules.
+- Member 3 pages are viva-ready.
+
+### Frontend F5 Validation Checklist (Completed)
+1. Filters and query params aligned with backend controller contract:
+- `status`, `priority`, `category`, `assignedTo`, `slaBreached`, `page`, `size`
+
+2. Action buttons aligned with backend link permissions (`ticket.links`):
+- `assign` controls assignment action visibility/usability
+- `updateStatus` controls status transition actions
+- `addComment` controls comment creation/deletion availability
+
+3. Notification-driven refresh behavior:
+- Added frontend auto-refresh polling fallback (`20s`) for selected ticket details and list sync while real-time notification/WebSocket consumer is pending.
+
+4. Frontend quick test list:
+- Student: create ticket (with/without images), add/edit/delete own comment, verify SLA badges
+- Technician: open assigned ticket, valid status transitions, comment operations, SLA breached filter
+- Admin: filter all tickets, assign technician using valid technician id, status changes, audit log filters/pagination
+- Permission UX: buttons disabled when corresponding backend link is absent
+
 ## Suggested Timeline
 - Phase 1: Day 1-2
 - Phase 2: Day 3-5
