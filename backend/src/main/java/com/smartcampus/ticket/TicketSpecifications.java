@@ -33,4 +33,5 @@ public final class TicketSpecifications {
             return cb.equal(cb.lower(root.get("category")), category.trim().toLowerCase());
         };
     }
+
 }

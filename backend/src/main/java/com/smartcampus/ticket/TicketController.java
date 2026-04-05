@@ -42,6 +42,7 @@ public class TicketController {
             @RequestParam(required = false) TicketPriority priority,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) UUID assignedTo,
+            @RequestParam(required = false) Boolean slaBreached,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
@@ -52,6 +53,7 @@ public class TicketController {
                 priority,
                 category,
                 assignedTo,
+                slaBreached,
                 page,
                 size
         );
@@ -94,7 +96,8 @@ public class TicketController {
     @PutMapping("/{id}/assign")
     public ResponseEntity<TicketResponse> assignTicket(
             @PathVariable UUID id,
-            @Valid @RequestBody AssignTicketRequest request) {
-        return ResponseEntity.ok(ticketService.assignTicket(id, request));
+            @Valid @RequestBody AssignTicketRequest request,
+            @AuthenticationPrincipal AuthUserPrincipal principal) {
+        return ResponseEntity.ok(ticketService.assignTicket(id, request, principal.userId(), principal.role()));
     }
 }

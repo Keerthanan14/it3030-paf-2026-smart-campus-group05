@@ -18,6 +18,7 @@ public interface TicketService {
                                        TicketPriority priority,
                                        String category,
                                        UUID assignedTo,
+                                       Boolean slaBreached,
                                        int page,
                                        int size);
 
@@ -33,5 +34,8 @@ public interface TicketService {
                                       UUID requesterUserId,
                                       String requesterRole);
 
-    TicketResponse assignTicket(UUID ticketId, AssignTicketRequest request);
+    TicketResponse assignTicket(UUID ticketId,
+                                AssignTicketRequest request,
+                                UUID requesterUserId,
+                                String requesterRole);
 }

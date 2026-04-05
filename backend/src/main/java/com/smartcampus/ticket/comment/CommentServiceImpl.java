@@ -4,6 +4,7 @@ import com.smartcampus.audit.AuditLogService;
 import com.smartcampus.exception.ForbiddenException;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.exception.TicketNotFoundException;
+import com.smartcampus.notification.NotificationService;
 import com.smartcampus.ticket.Ticket;
 import com.smartcampus.ticket.TicketRepository;
 import com.smartcampus.ticket.dto.CommentResponse;
@@ -24,15 +25,18 @@ public class CommentServiceImpl implements CommentService {
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     public CommentServiceImpl(CommentRepository commentRepository,
                               TicketRepository ticketRepository,
                               UserRepository userRepository,
-                              AuditLogService auditLogService) {
+                              AuditLogService auditLogService,
+                              NotificationService notificationService) {
         this.commentRepository = commentRepository;
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.auditLogService = auditLogService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -64,6 +68,14 @@ public class CommentServiceImpl implements CommentService {
                 "content", saved.getContent()
             )
         );
+
+        if (!saved.getUser().getId().equals(ticket.getUser().getId())) {
+            notificationService.sendNewCommentNotification(
+                    ticket.getUser().getId(),
+                    ticket.getId(),
+                    saved.getUser().getName()
+            );
+        }
 
         return toResponse(saved);
     }

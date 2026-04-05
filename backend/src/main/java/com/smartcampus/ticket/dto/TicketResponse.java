@@ -5,6 +5,7 @@ import com.smartcampus.ticket.TicketStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public record TicketResponse(
@@ -28,6 +29,7 @@ public record TicketResponse(
         String timeToResolution,
         boolean firstResponseBreached,
         boolean resolutionBreached,
+        Map<String, String> links,
         List<TicketAttachmentResponse> attachments,
         List<CommentResponse> comments,
         LocalDateTime createdAt,

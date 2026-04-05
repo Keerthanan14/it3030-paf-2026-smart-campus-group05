@@ -4,6 +4,7 @@ import com.smartcampus.audit.AuditLogService;
 import com.smartcampus.exception.ForbiddenException;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.exception.TicketNotFoundException;
+import com.smartcampus.notification.NotificationService;
 import com.smartcampus.resource.Resource;
 import com.smartcampus.resource.ResourceRepository;
 import com.smartcampus.ticket.attachment.FileStorageService;
@@ -30,6 +31,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,6 +47,7 @@ public class TicketServiceImpl implements TicketService {
     private final CommentRepository commentRepository;
     private final FileStorageService fileStorageService;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     public TicketServiceImpl(TicketRepository ticketRepository,
                              UserRepository userRepository,
@@ -51,7 +55,8 @@ public class TicketServiceImpl implements TicketService {
                              TicketAttachmentRepository ticketAttachmentRepository,
                              CommentRepository commentRepository,
                              FileStorageService fileStorageService,
-                             AuditLogService auditLogService) {
+                             AuditLogService auditLogService,
+                             NotificationService notificationService) {
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
@@ -59,6 +64,7 @@ public class TicketServiceImpl implements TicketService {
         this.commentRepository = commentRepository;
         this.fileStorageService = fileStorageService;
         this.auditLogService = auditLogService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -69,13 +75,14 @@ public class TicketServiceImpl implements TicketService {
                                               TicketPriority priority,
                                               String category,
                                               UUID assignedTo,
+                                                  Boolean slaBreached,
                                               int page,
                                               int size) {
         validatePageParams(page, size);
 
         Specification<Ticket> spec = Specification.where(TicketSpecifications.hasStatus(status))
                 .and(TicketSpecifications.hasPriority(priority))
-                .and(TicketSpecifications.hasCategory(category));
+            .and(TicketSpecifications.hasCategory(category));
 
         if (isAdminRole(requesterRole)) {
             spec = spec.and(TicketSpecifications.hasAssignedTo(assignedTo));
@@ -85,16 +92,45 @@ public class TicketServiceImpl implements TicketService {
             spec = spec.and(TicketSpecifications.hasUserId(requesterUserId));
         }
 
-        Page<TicketResponse> result = ticketRepository
+        if (slaBreached == null) {
+            Page<TicketResponse> result = ticketRepository
                 .findAll(spec, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))
-                .map(this::toResponse);
+                .map(ticket -> toResponse(ticket, requesterUserId, requesterRole));
 
-        return new PaginatedTicketResponse(
+            return new PaginatedTicketResponse(
                 result.getContent(),
                 result.getTotalElements(),
                 result.getTotalPages(),
                 result.getNumber(),
                 result.getSize()
+            );
+        }
+
+        List<Ticket> all = ticketRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt"));
+        List<Ticket> filtered = new ArrayList<>();
+        for (Ticket ticket : all) {
+            if (isSlaBreached(ticket) == slaBreached) {
+            filtered.add(ticket);
+            }
+        }
+
+        int total = filtered.size();
+        int fromIndex = page * size;
+        if (fromIndex >= total) {
+            return new PaginatedTicketResponse(List.of(), total, (int) Math.ceil((double) total / size), page, size);
+        }
+        int toIndex = Math.min(fromIndex + size, total);
+        List<TicketResponse> content = filtered.subList(fromIndex, toIndex)
+            .stream()
+            .map(ticket -> toResponse(ticket, requesterUserId, requesterRole))
+            .toList();
+
+        return new PaginatedTicketResponse(
+            content,
+            total,
+            (int) Math.ceil((double) total / size),
+            page,
+            size
         );
     }
 
@@ -106,7 +142,7 @@ public class TicketServiceImpl implements TicketService {
 
         enforceTicketAccess(ticket, requesterUserId, requesterRole);
 
-        return toResponse(ticket);
+        return toResponse(ticket, requesterUserId, requesterRole);
     }
 
     @Override
@@ -153,7 +189,7 @@ public class TicketServiceImpl implements TicketService {
             )
         );
 
-        return toResponse(savedTicket);
+        return toResponse(savedTicket, requesterUserId, requesterRole);
     }
 
     @Override
@@ -217,12 +253,21 @@ public class TicketServiceImpl implements TicketService {
                 Map.of("status", saved.getStatus().name())
         );
 
-        return toResponse(saved);
+        notificationService.sendTicketStatusNotification(saved.getUser().getId(), saved.getId(), saved.getStatus().name());
+
+        return toResponse(saved, requesterUserId, requesterRole);
     }
 
     @Override
     @Transactional
-    public TicketResponse assignTicket(UUID ticketId, AssignTicketRequest request) {
+        public TicketResponse assignTicket(UUID ticketId,
+                           AssignTicketRequest request,
+                           UUID requesterUserId,
+                           String requesterRole) {
+            if (!isAdminRole(requesterRole)) {
+                throw new ForbiddenException("Only admins can assign technicians to tickets");
+            }
+
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new TicketNotFoundException("Ticket not found for id: " + ticketId));
 
@@ -239,7 +284,7 @@ public class TicketServiceImpl implements TicketService {
         Ticket saved = ticketRepository.save(ticket);
 
         auditLogService.logAction(
-            null,
+            requesterUserId,
             "ASSIGN",
             "TICKET",
             saved.getId(),
@@ -247,7 +292,7 @@ public class TicketServiceImpl implements TicketService {
             Map.of("assignedTo", saved.getAssignedTo().getId().toString())
         );
 
-        return toResponse(saved);
+        return toResponse(saved, requesterUserId, requesterRole);
     }
 
     private void validatePageParams(int page, int size) {
@@ -301,7 +346,7 @@ public class TicketServiceImpl implements TicketService {
         }
     }
 
-    private TicketResponse toResponse(Ticket ticket) {
+    private TicketResponse toResponse(Ticket ticket, UUID requesterUserId, String requesterRole) {
         List<TicketAttachmentResponse> attachments = ticketAttachmentRepository.findByTicket_Id(ticket.getId())
             .stream()
             .map(attachment -> new TicketAttachmentResponse(
@@ -326,6 +371,8 @@ public class TicketServiceImpl implements TicketService {
             ))
             .toList();
 
+        Map<String, String> links = buildLinks(ticket, requesterUserId, requesterRole);
+
         return new TicketResponse(
                 ticket.getId(),
                 ticket.getUser().getId(),
@@ -347,11 +394,38 @@ public class TicketServiceImpl implements TicketService {
                 computeTimeToResolution(ticket),
                 isFirstResponseBreached(ticket),
                 isResolutionBreached(ticket),
+                links,
                 attachments,
                 comments,
                 ticket.getCreatedAt(),
                 ticket.getUpdatedAt()
         );
+    }
+
+    private Map<String, String> buildLinks(Ticket ticket, UUID requesterUserId, String requesterRole) {
+        Map<String, String> links = new HashMap<>();
+
+        String base = "/api/tickets/" + ticket.getId();
+        links.put("self", base);
+
+        boolean isAdmin = isAdminRole(requesterRole);
+        boolean isTechnician = isTechnicianRole(requesterRole);
+        boolean isOwner = requesterUserId != null && requesterUserId.equals(ticket.getUser().getId());
+        boolean assignedTech = isTechnician && ticket.getAssignedTo() != null && requesterUserId.equals(ticket.getAssignedTo().getId());
+
+        if (isAdmin) {
+            links.put("assign", base + "/assign");
+        }
+
+        if ((isAdmin || assignedTech) && ticket.getStatus() != TicketStatus.CLOSED && ticket.getStatus() != TicketStatus.REJECTED) {
+            links.put("updateStatus", base + "/status");
+        }
+
+        if (isAdmin || isOwner || assignedTech) {
+            links.put("addComment", base + "/comments");
+        }
+
+        return links;
     }
 
     private String computeTimeToFirstResponse(Ticket ticket) {
@@ -378,6 +452,10 @@ public class TicketServiceImpl implements TicketService {
         LocalDateTime end = ticket.getResolvedAt() == null ? LocalDateTime.now() : ticket.getResolvedAt();
         long hours = Duration.between(ticket.getCreatedAt(), end).toHours();
         return hours > TicketSlaConstants.RESOLUTION_TARGET_HOURS;
+    }
+
+    private boolean isSlaBreached(Ticket ticket) {
+        return isFirstResponseBreached(ticket) || isResolutionBreached(ticket);
     }
 
     private String formatDuration(Duration duration) {
