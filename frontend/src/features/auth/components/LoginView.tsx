@@ -9,7 +9,7 @@ import { Input } from '../../../shared/components/ui/Input';
 import { authApi } from '../../../core/api/authApi';
 import { useAuthStore } from '../../../core/store/authStore';
 import { redirectByRole } from '../../../core/utils/redirectByRole';
-import { useToast } from '../../../shared/components/ui/ToastProvider';
+import { useToast } from '../../../shared/components/ui/useToast';
 import type { ApiErrorResponse } from '../../../types/api';
 
 const loginSchema = z.object({

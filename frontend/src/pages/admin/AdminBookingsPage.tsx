@@ -3,7 +3,7 @@ import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
 import { Input } from '../../shared/components/ui/Input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../shared/components/ui/Table';
-import { useToast } from '../../shared/components/ui/ToastProvider';
+import { useToast } from '../../shared/components/ui/useToast';
 import { useBookingStore } from '../../core/store/bookingStore';
 import type { BookingApiError, BookingItem, BookingStatus } from '../../types/booking';
 

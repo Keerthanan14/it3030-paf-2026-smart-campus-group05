@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useToast } from "../../../shared/components/ui/ToastProvider";
+import { useToast } from "../../../shared/components/ui/useToast";
 import { useAuthStore } from "../../../core/store/authStore";
 import useTicketActions from "./useTicketActions";
 import useTicketAutoRefresh from "./useTicketAutoRefresh";

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { TOKEN_KEY, useAuthStore } from '../../../core/store/authStore';
 import { useNotificationStore } from '../../../core/store/notificationStore';
 import { notificationSocketService } from '../services/notificationSocket';
-import { useToast } from '../../../shared/components/ui/ToastProvider';
+import { useToast } from '../../../shared/components/ui/useToast';
 
 export function NotificationRealtimeBridge() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);

@@ -8,7 +8,7 @@ import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
 import { authApi } from '../../../core/api/authApi';
 import type { ApiErrorResponse } from '../../../types/api';
-import { useToast } from '../../../shared/components/ui/ToastProvider';
+import { useToast } from '../../../shared/components/ui/useToast';
 
 const resetPasswordSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
