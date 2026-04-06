@@ -25,6 +25,11 @@ const activeResource: ResourceItem = {
   status: 'ACTIVE',
   createdAt: '2026-04-01T10:00:00',
   updatedAt: '2026-04-01T10:00:00',
+  _links: {
+    book: { href: '/api/bookings' },
+    availability: { href: '/api/resources/resource-42/availability' },
+    update: { href: '/api/resources/resource-42' },
+  },
 };
 
 function BookingRouteProbe() {
@@ -51,7 +56,7 @@ describe('ResourceDetailPage', () => {
       </MemoryRouter>
     );
 
-    await user.click(screen.getByRole('link', { name: 'Book Now' }));
+    await user.click(screen.getByText('Book Now'));
 
     expect(screen.getByTestId('booking-search')).toHaveTextContent('?resourceId=resource-42');
   });
