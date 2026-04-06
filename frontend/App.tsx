@@ -1,13 +1,1 @@
-import './App.css'
-
-function App() {
-
-
-  return (
-    <>
-      
-    </>
-  )
-}
-
-export default App
+export { default } from './src/App.tsx'

@@ -25,10 +25,12 @@ import StudentNotificationsPage from './pages/student/StudentNotificationsPage';
 import StudentSettingsPage from './pages/student/StudentSettingsPage';
 import StudentTicketsPage from './pages/student/StudentTicketsPage';
 import { AdminRoute, ProtectedRoute, StudentRoute, TechnicianRoute } from './routes/RouteGuards.tsx';
+import { NotificationRealtimeBridge } from './features/notification/components/NotificationRealtimeBridge';
 
 function App() {
   return (
     <BrowserRouter>
+      <NotificationRealtimeBridge />
       <Routes>
         {/* Public / Auth Routes */}
         <Route element={<AuthLayout />}>

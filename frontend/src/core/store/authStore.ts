@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { AuthState } from '../../types/auth';
 
-const TOKEN_KEY = import.meta.env.VITE_JWT_STORAGE_KEY || 'access_token';
+export const TOKEN_KEY = import.meta.env.VITE_JWT_STORAGE_KEY || 'access_token';
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
