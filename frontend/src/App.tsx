@@ -42,10 +42,6 @@ function App() {
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
-            <Route path="/resources" element={<ResourcesCatalogPage />} />
-            <Route path="/resources/:id" element={<ResourceDetailPage />} />
-            <Route path="/resources/:id/calendar" element={<ResourceCalendarPage />} />
-
             <Route element={<AdminRoute />}>
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
@@ -54,12 +50,18 @@ function App() {
               <Route path="/admin/resources" element={<AdminResourcesPage />} />
               <Route path="/admin/resources/new" element={<AdminResourceFormPage />} />
               <Route path="/admin/resources/:id/edit" element={<AdminResourceFormPage />} />
+              <Route path="/admin/resources/browse" element={<ResourcesCatalogPage />} />
+              <Route path="/admin/resources/browse/:id" element={<ResourceDetailPage />} />
+              <Route path="/admin/resources/browse/:id/calendar" element={<ResourceCalendarPage />} />
               <Route path="/admin/bookings" element={<AdminBookingsPage />} />
               <Route path="/admin/tickets" element={<AdminTicketsPage />} />
             </Route>
 
             <Route element={<StudentRoute />}>
               <Route path="/student/dashboard" element={<StudentDashboardPage />} />
+              <Route path="/student/resources" element={<ResourcesCatalogPage />} />
+              <Route path="/student/resources/:id" element={<ResourceDetailPage />} />
+              <Route path="/student/resources/:id/calendar" element={<ResourceCalendarPage />} />
               <Route path="/student/booking" element={<StudentBookingsPage />} />
               <Route path="/booking" element={<Navigate to="/student/booking" replace />} />
               <Route path="/student/notifications" element={<StudentNotificationsPage />} />
@@ -70,6 +72,9 @@ function App() {
 
             <Route element={<TechnicianRoute />}>
               <Route path="/technician/dashboard" element={<TechnicianDashboardPage />} />
+              <Route path="/technician/resources" element={<ResourcesCatalogPage />} />
+              <Route path="/technician/resources/:id" element={<ResourceDetailPage />} />
+              <Route path="/technician/resources/:id/calendar" element={<ResourceCalendarPage />} />
               <Route path="/technician/tickets" element={<TechnicianTicketsPage />} />
             </Route>
           </Route>
