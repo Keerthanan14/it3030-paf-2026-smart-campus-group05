@@ -169,3 +169,72 @@ Deliverables:
 ## Current Start Point
 - Environment setup done (backend/frontend .env templates and local files created).
 - Next action: begin Phase 1 implementation in backend.
+
+## Status Review
+
+### Done
+- Backend auth foundation is in place: OAuth2, JWT generation/validation, user persistence, security filter chain, and OAuth2 success redirect.
+- Auth endpoints are available: login, logout, refresh, me, register request-code, verify-code, set-password, staff creation, and change-password.
+- Notification backend is implemented: entity, service, repository, REST endpoints, unread count, ownership checks, WebSocket push, and email sending.
+- Frontend auth plumbing exists: login page, OAuth callback page, token storage, API bearer header injection, and route guards.
+
+### Partial
+- Frontend auth is functional but still uses a Zustand store instead of a dedicated AuthContext.
+- Theme support exists in a basic form, but the app does not yet have a full ThemeContext-driven implementation.
+- Notification screens exist, but the bell dropdown, live unread badge, and notification list are still placeholder-level in the UI.
+- Backend email notifications work, but the HTML template layer described in the PRD is not finished.
+
+### Not Started
+- Frontend realtime notification client with SockJS/STOMP.
+- Full notification bell integration with live badge updates and toast/pop-up handling.
+- HATEOAS links for auth and notification responses.
+- Auth and notification test coverage.
+- Viva prep notes or documentation extracted from the implementation.
+
+## Revised Remaining Phases
+
+## Phase 8 - Frontend Notifications Foundation
+Goal:
+- Turn the notification backend into a working UI experience.
+
+Tasks:
+- Create the Member 4 frontend notification layer under the guide-aligned folders:
+  - frontend/src/features/notification/
+  - frontend/src/features/admin/
+  - frontend/src/shared/components/layout/Navbar.tsx
+- Create NotificationContext or equivalent shared state for unread count and latest items.
+- Build the bell icon in the navbar with unread badge and dropdown panel.
+- Fetch notifications from the backend and render the latest items from the notification list response.
+- Implement mark one read and mark all read actions from the notification UI.
+- Add navigation hooks so a notification click can route to the related booking or ticket.
+
+Deliverables:
+- Users can see notifications in the navbar and manage read state from the UI.
+
+## Phase 9 - Realtime + Theme Completion
+Goal:
+- Finish the live notification client and dark mode system.
+
+Tasks:
+- Add SockJS and STOMP client dependencies.
+- Connect the frontend to the WebSocket notification channel.
+- Show toast or pop-up messages for incoming notifications.
+- Introduce a full ThemeContext and apply theme globally.
+- Persist and restore the selected theme across refreshes.
+
+Deliverables:
+- Realtime notification updates work in the browser.
+- Dark mode is applied consistently across the app.
+
+## Phase 10 - HATEOAS, QA, and Viva Readiness
+Goal:
+- Polish the API contract and prepare for submission/demo.
+
+Tasks:
+- Add HATEOAS links to auth and notification responses.
+- Verify response codes and error handling.
+- Add basic unit and integration tests for auth and notifications.
+- Write viva notes for OAuth2, JWT, WebSocket auth, notification ownership, and dark mode.
+
+Deliverables:
+- Member 4 work is demo-ready, testable, and easy to explain in the viva.

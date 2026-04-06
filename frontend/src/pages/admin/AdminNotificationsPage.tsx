@@ -1,11 +1,13 @@
+import { NotificationInbox } from '../../features/notification/components/NotificationInbox';
+
 export default function AdminNotificationsPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">System Notifications</h1>
-        <p className="mt-1 text-sm text-foreground/70">View and manage platform-wide announcements and alerts.</p>
-        <hr className="mt-4 -mx-4 border-border/70 sm:-mx-6 lg:-mx-8" />
-      </div>
-    </div>
+    <NotificationInbox
+      title="System Notifications"
+      description="View booking, ticket, and comment notifications routed to the current admin account."
+      pageSize={10}
+      emptyTitle="No system notifications yet"
+      emptyDescription="Once booking approvals, rejections, or ticket updates happen, they will appear here."
+    />
   );
 }
