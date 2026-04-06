@@ -21,7 +21,12 @@ function unwrapModel<T>(payload: MaybeHateoasModel<T>): T {
 }
 
 function toResourceItem(payload: MaybeHateoasModel<ResourceItem>): ResourceItem {
-	return unwrapModel(payload);
+	const item = unwrapModel(payload);
+	// Preserve _links if present in the HATEOAS response
+	if ('_links' in payload && payload._links) {
+		return { ...item, _links: payload._links };
+	}
+	return item;
 }
 
 export const resourceApi = {
@@ -58,9 +63,10 @@ export const resourceApi = {
 
 	async getResourceById(id: string) {
 		const response = await api.get<MaybeHateoasModel<ResourceItem>>(`/resources/${id}`);
+		const item = toResourceItem(response.data);
 		return {
 			...response,
-			data: toResourceItem(response.data),
+			data: item,
 		};
 	},
 

@@ -36,15 +36,14 @@ export function MainLayout() {
 
     if (role === 'admin') {
       nav.push(
-        { name: 'Browse Resources', href: '/resources', icon: Calendar },
+        { name: 'Browse Resources', href: '/admin/resources/browse', icon: Calendar },
         { name: 'Resources', href: '/admin/resources', icon: Home },
         { name: 'Bookings', href: '/admin/bookings', icon: Calendar },
-        { name: 'Incidents', href: '/admin/tickets', icon: Ticket },
         { name: 'System Settings', href: '/admin/settings', icon: Settings }
       );
     } else if (role === 'student' || role === 'staff') {
       nav.push(
-        { name: 'Resources', href: '/resources', icon: Home },
+        { name: 'Resources', href: '/student/resources', icon: Home },
         { name: 'My Bookings', href: '/student/booking', icon: Calendar },
         { name: 'My Tickets', href: '/student/tickets', icon: Ticket },
         { name: 'Notifications', href: '/student/notifications', icon: Bell },
@@ -52,8 +51,7 @@ export function MainLayout() {
       );
     } else if (role === 'technician') {
       nav.push(
-        { name: 'Resources', href: '/resources', icon: Home },
-        { name: 'Assigned Tickets', href: '/technician/tickets', icon: Ticket }
+        { name: 'Resources', href: '/technician/resources', icon: Home }
       );
     }
 
@@ -76,7 +74,7 @@ export function MainLayout() {
 
       <div className={clsx('flex flex-col flex-1 transition-[padding-left] duration-200', isSidebarOpen ? 'lg:pl-72' : 'lg:pl-20')}>
         <main className="py-2 flex-1">
-          <div className="px-4 sm:px-6 lg:px-8 text-foreground">
+          <div key={location.pathname} className="px-4 sm:px-6 lg:px-8 text-foreground">
             <Outlet />
           </div>
         </main>

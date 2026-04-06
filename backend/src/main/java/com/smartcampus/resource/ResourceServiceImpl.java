@@ -1,6 +1,9 @@
 package com.smartcampus.resource;
 
+import com.smartcampus.booking.BookingRepository;
+import com.smartcampus.booking.BookingStatus;
 import com.smartcampus.booking.BookingService;
+import com.smartcampus.exception.ConflictException;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.resource.dto.CreateResourceRequest;
 import com.smartcampus.resource.dto.PaginatedResourceResponse;
@@ -14,18 +17,28 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.Collections;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class ResourceServiceImpl implements ResourceService {
 
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+
     private final ResourceRepository resourceRepository;
     private final BookingService bookingService;
+    private final BookingRepository bookingRepository;
 
-    public ResourceServiceImpl(ResourceRepository resourceRepository, BookingService bookingService) {
+    public ResourceServiceImpl(ResourceRepository resourceRepository,
+                               BookingService bookingService,
+                               BookingRepository bookingRepository) {
         this.resourceRepository = resourceRepository;
         this.bookingService = bookingService;
+        this.bookingRepository = bookingRepository;
     }
 
     @Override
@@ -75,6 +88,8 @@ public class ResourceServiceImpl implements ResourceService {
 
     @Override
     public ResourceResponse createResource(CreateResourceRequest request) {
+        validateAvailabilityWindows(request.availabilityWindows());
+
         Resource resource = new Resource();
         resource.setName(request.name());
         resource.setType(request.type());
@@ -89,6 +104,8 @@ public class ResourceServiceImpl implements ResourceService {
 
     @Override
     public ResourceResponse updateResource(UUID id, UpdateResourceRequest request) {
+        validateAvailabilityWindows(request.availabilityWindows());
+
         Resource resource = getExistingResource(id);
         resource.setName(request.name());
         resource.setType(request.type());
@@ -118,6 +135,17 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     public void softDeleteResource(UUID id) {
         Resource resource = getExistingResource(id);
+
+        boolean hasFutureApprovedBookings = bookingRepository.existsByResource_IdAndStatusAndBookingDateGreaterThanEqual(
+                resource.getId(),
+                BookingStatus.APPROVED,
+                LocalDate.now()
+        );
+
+        if (hasFutureApprovedBookings) {
+            throw new ConflictException("Cannot delete resource with active approved bookings in the future");
+        }
+
         resource.setDeleted(true);
         resourceRepository.save(resource);
     }
@@ -130,12 +158,27 @@ public class ResourceServiceImpl implements ResourceService {
 
         Resource resource = getExistingResource(id);
 
-        // Booking integration will populate blocked slots once booking module is connected.
+        List<ResourceAvailabilityResponse.BookedSlotResponse> bookedSlots = bookingRepository
+            .findByResource_IdAndStatusAndBookingDateBetweenOrderByBookingDateAscStartTimeAsc(
+                id,
+                BookingStatus.APPROVED,
+                from,
+                to
+            )
+            .stream()
+            .map(booking -> new ResourceAvailabilityResponse.BookedSlotResponse(
+                booking.getBookingDate().toString(),
+                booking.getStartTime().toString(),
+                booking.getEndTime().toString(),
+                booking.getPurpose()
+            ))
+            .toList();
+
         return new ResourceAvailabilityResponse(
                 resource.getId(),
                 resource.getName(),
                 resource.getAvailabilityWindows(),
-                Collections.emptyList()
+            bookedSlots
         );
     }
 
@@ -164,6 +207,40 @@ public class ResourceServiceImpl implements ResourceService {
 
     private void handleOutOfServiceTransition(Resource resource) {
         bookingService.autoRejectPendingForResourceOutOfService(resource.getId());
+    }
+
+    private void validateAvailabilityWindows(Map<String, AvailabilityWindow> windows) {
+        if (windows == null || windows.isEmpty()) {
+            return;
+        }
+
+        for (Map.Entry<String, AvailabilityWindow> entry : windows.entrySet()) {
+            String day = entry.getKey();
+            AvailabilityWindow window = entry.getValue();
+
+            if (window == null) {
+                throw new IllegalArgumentException("availability window is required for day: " + day);
+            }
+
+            LocalTime open = parseWindowTime(day, "open", window.getOpen());
+            LocalTime close = parseWindowTime(day, "close", window.getClose());
+
+            if (!open.isBefore(close)) {
+                throw new IllegalArgumentException("availability window open time must be before close time for day: " + day);
+            }
+        }
+    }
+
+    private LocalTime parseWindowTime(String day, String fieldName, String timeValue) {
+        if (timeValue == null || timeValue.isBlank()) {
+            throw new IllegalArgumentException("availability window " + fieldName + " time is required for day: " + day);
+        }
+
+        try {
+            return LocalTime.parse(timeValue, TIME_FORMATTER);
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException("availability window " + fieldName + " time must be in HH:mm format for day: " + day);
+        }
     }
 
     private ResourceResponse toResponse(Resource resource) {

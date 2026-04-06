@@ -27,6 +27,19 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>, JpaSpec
 
         List<Booking> findByResource_IdAndStatus(UUID resourceId, BookingStatus status);
 
+        List<Booking> findByResource_IdAndStatusAndBookingDateBetweenOrderByBookingDateAscStartTimeAsc(
+                        UUID resourceId,
+                        BookingStatus status,
+                        LocalDate from,
+                        LocalDate to
+        );
+
+            boolean existsByResource_IdAndStatusAndBookingDateGreaterThanEqual(
+                    UUID resourceId,
+                    BookingStatus status,
+                    LocalDate bookingDate
+            );
+
     @Query("""
             SELECT b
             FROM Booking b

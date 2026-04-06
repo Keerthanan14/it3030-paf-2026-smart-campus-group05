@@ -6,6 +6,10 @@ interface ResourceDetailCardProps {
   canManage: boolean;
 }
 
+function getLinkHref(resource: ResourceItem, rel: string): string | null {
+  return resource._links?.[rel]?.href ?? null;
+}
+
 export function ResourceDetailCard({ resource, canManage }: ResourceDetailCardProps) {
   return (
     <div className="rounded-lg border border-border/60 bg-card p-5">
@@ -43,13 +47,33 @@ export function ResourceDetailCard({ resource, canManage }: ResourceDetailCardPr
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link to={`/resources/${resource.id}/calendar`} className="rounded-md border border-border/70 px-3 py-2 text-sm">
-          View Calendar
-        </Link>
-        {canManage ? (
+        {getLinkHref(resource, 'book') ? (
+          <Link
+            to={`/student/booking?resourceId=${resource.id}`}
+            className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
+          >
+            Book Now
+          </Link>
+        ) : null}
+        {getLinkHref(resource, 'availability') ? (
+          <Link to={`/resources/${resource.id}/calendar`} className="rounded-md border border-border/70 px-3 py-2 text-sm">
+            View Calendar
+          </Link>
+        ) : null}
+        {getLinkHref(resource, 'update') && canManage ? (
           <Link to={`/admin/resources/${resource.id}/edit`} className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
             Edit Resource
           </Link>
+        ) : null}
+        {getLinkHref(resource, 'activate') && canManage ? (
+          <button
+            type="button"
+            className="rounded-md border border-emerald-300 px-3 py-2 text-sm font-semibold text-emerald-700"
+            disabled
+            title="Resource is out of service. Contact admin to reactivate."
+          >
+            Activate Resource
+          </button>
         ) : null}
       </div>
     </div>

@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { useToast } from '../../shared/components/ui/ToastProvider';
 import { useBookingStore } from '../../core/store/bookingStore';
 import type { BookingApiError, BookingItem, BookingStatus, CreateBookingRequest } from '../../types/booking';
+import { useSearchParams } from 'react-router-dom';
 
 const badgeTone: Record<BookingStatus, string> = {
   PENDING: 'bg-amber-100 text-amber-800',
@@ -38,6 +39,11 @@ const canCancelBooking = (booking: BookingItem): boolean => {
 
 export default function StudentBookingsPage() {
   const toast = useToast();
+  const [searchParams] = useSearchParams();
+  const prefilledResourceId = searchParams.get('resourceId');
+  const prefilledDate = searchParams.get('date');
+  const prefilledStartTime = searchParams.get('startTime');
+  const prefilledEndTime = searchParams.get('endTime');
 
   const {
     items,
@@ -61,10 +67,10 @@ export default function StudentBookingsPage() {
     clearError,
   } = useBookingStore();
 
-  const [resourceId, setResourceId] = useState('');
-  const [bookingDate, setBookingDate] = useState(nowDate());
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('10:00');
+  const [resourceId, setResourceId] = useState(() => prefilledResourceId ?? '');
+  const [bookingDate, setBookingDate] = useState(() => prefilledDate ?? nowDate());
+  const [startTime, setStartTime] = useState(() => prefilledStartTime ?? '09:00');
+  const [endTime, setEndTime] = useState(() => prefilledEndTime ?? '10:00');
   const [purpose, setPurpose] = useState('');
   const [attendeesCount, setAttendeesCount] = useState('1');
 
@@ -159,6 +165,9 @@ export default function StudentBookingsPage() {
             placeholder="1"
           />
         </div>
+        {prefilledResourceId ? (
+          <p className="text-xs text-foreground/70">Resource and slot details were prefilled from the selected resource calendar.</p>
+        ) : null}
 
         <div className="grid gap-3 md:grid-cols-3">
           <Input type="date" label="Booking Date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} />
