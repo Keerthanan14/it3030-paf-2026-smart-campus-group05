@@ -38,6 +38,7 @@ export function MainLayout() {
       nav.push(
         { name: 'Browse Resources', href: '/resources', icon: Calendar },
         { name: 'Resources', href: '/admin/resources', icon: Home },
+        { name: 'Bookings', href: '/admin/bookings', icon: Calendar },
         { name: 'Incidents', href: '/admin/tickets', icon: Ticket },
         { name: 'System Settings', href: '/admin/settings', icon: Settings }
       );

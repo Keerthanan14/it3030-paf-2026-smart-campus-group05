@@ -13,6 +13,7 @@ import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import AdminResourcesPage from './pages/admin/AdminResourcesPage';
 import AdminResourceFormPage from './pages/admin/AdminResourceFormPage';
 import AdminTicketsPage from './pages/admin/AdminTicketsPage';
+import AdminBookingsPage from './pages/admin/AdminBookingsPage';
 import StudentDashboardPage from './pages/student/StudentDashboardPage';
 import StudentBookingsPage from './pages/student/StudentBookingsPage';
 import ResourcesCatalogPage from './pages/resources/ResourcesCatalogPage';
@@ -53,6 +54,7 @@ function App() {
               <Route path="/admin/resources" element={<AdminResourcesPage />} />
               <Route path="/admin/resources/new" element={<AdminResourceFormPage />} />
               <Route path="/admin/resources/:id/edit" element={<AdminResourceFormPage />} />
+              <Route path="/admin/bookings" element={<AdminBookingsPage />} />
               <Route path="/admin/tickets" element={<AdminTicketsPage />} />
             </Route>
 

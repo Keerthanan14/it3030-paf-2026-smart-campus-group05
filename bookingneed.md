@@ -77,6 +77,77 @@ This document lists everything Module B needs from other modules so Booking can 
 - display rejection reason clearly
 - show friendly conflict error (`409`)
 
+### Frontend File Plan (Project Standard)
+- `frontend/src/types/booking.ts` -> booking types and response contracts
+- `frontend/src/core/api/bookingApi.ts` -> booking API client methods only
+- `frontend/src/core/store/bookingStore.ts` -> booking global state and async actions
+- `frontend/src/features/bookings/components/` -> reusable booking UI blocks
+- `frontend/src/features/bookings/hooks/` -> booking-specific logic hooks
+- `frontend/src/pages/student/StudentBookingsPage.tsx` -> thin page composition only
+- `frontend/src/pages/admin/AdminBookingsPage.tsx` -> thin page composition only
+
+### Current Frontend Status (As-Is)
+- `frontend/src/core/api/bookingApi.ts` is empty.
+- `frontend/src/core/store/bookingStore.ts` is empty.
+- `frontend/src/types/booking.ts` is empty.
+- `frontend/src/pages/student/StudentBookingsPage.tsx` is currently a header-only placeholder.
+- `frontend/src/pages/admin/` does not currently contain a booking management page.
+
+### Frontend Acceptance Checklist (Phase 5)
+- [x] Booking types defined in `frontend/src/types/booking.ts`
+- [x] API methods added in `frontend/src/core/api/bookingApi.ts`
+- [x] Store actions/selectors added in `frontend/src/core/store/bookingStore.ts`
+- [x] Student booking list/detail/cancel flow wired
+- [x] Admin approve/reject flow with rejection reason modal wired
+- [x] PDF/Excel export buttons wired with loading and file download
+- [x] `409` conflict and validation errors shown with clear UI messages
+- [x] HATEOAS action links consumed when backend links are available
+
+### Frontend Phase Split
+
+#### Frontend Phase F1 - Contracts and API Layer
+- Create booking contracts in `frontend/src/types/booking.ts`
+- Add API client methods in `frontend/src/core/api/bookingApi.ts`:
+  - getBookings
+  - getBookingById
+  - createBooking
+  - approveBooking
+  - rejectBooking
+  - cancelBooking
+  - exportBookingsPdf
+  - exportBookingsExcel
+- Normalize API error handling for `400/403/404/409`
+
+#### Frontend Phase F2 - Store and State Wiring
+- Implement booking store in `frontend/src/core/store/bookingStore.ts`
+- Add loading, error, and pagination state
+- Add actions for list/detail/create/approve/reject/cancel/export
+- Add filter state: status, resourceId, from, to
+
+#### Frontend Phase F3 - Student Flows
+- Build booking list + detail in `frontend/src/pages/student/StudentBookingsPage.tsx`
+- Add cancel action for `APPROVED` bookings only
+- Show rejection reason for `REJECTED` bookings
+- Show friendly conflict message for `409`
+
+#### Frontend Phase F4 - Admin Booking Management
+- Create `frontend/src/pages/admin/AdminBookingsPage.tsx`
+- Add pending booking actions: approve/reject
+- Add rejection reason modal and validation
+- Add filter controls: status, date range, resource
+
+#### Frontend Phase F5 - Export Integration
+- Add PDF and Excel export buttons in admin page
+- Pass current filters to export endpoints
+- Show loading states during file generation
+- Trigger browser download with server file names
+
+#### Frontend Phase F6 - HATEOAS Consumption and Polish
+- Read `_links` from booking responses when backend HATEOAS is ready
+- Render action buttons based on available links (not status text only)
+- Final UI polish, empty states, and responsive checks
+- Add manual test checklist evidence for viva/demo
+
 ## Need 6 - DevOps/Project Standards
 ### Required Setup
 - CI build includes booking unit/integration tests
@@ -99,11 +170,12 @@ This document lists everything Module B needs from other modules so Booking can 
 - [x] Pending bookings auto-reject on resource OUT_OF_SERVICE
 - [x] Auto-rejection reason stored exactly: `Resource is out of service.`
 - [x] Notifications sent for approve/reject/auto-reject
-- [ ] Audit logs written for booking status transitions (Pending - depends on Admin/Audit module implementation)
-- [ ] Exports include rejected records and rejection reasons (Pending - Phase 4)
+- [x] Audit logs written for booking status transitions
+- [x] Exports include rejected records and rejection reasons
 - [x] USER data isolation verified
 - [x] Admin filters and actions verified
 
 ## Current Status Note
-- Booking side integration is complete for resource checks, conflict handling, ownership rules, and notification triggers.
-- Admin audit logging is an external dependency and will be completed once the Admin/Audit module service is available.
+- Booking side integration is complete for resource checks, conflict handling, ownership rules, notification triggers, and audit logging.
+- Backend export endpoints are implemented for PDF and Excel with optional filters.
+- Frontend booking wiring is implemented through F1-F6, including HATEOAS-first action rendering with safe fallback when links are absent.

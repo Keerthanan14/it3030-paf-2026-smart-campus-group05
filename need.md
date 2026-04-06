@@ -71,13 +71,13 @@ Preferred:
 ## Acceptance Checklist for Member 2
 Mark done only when all are complete.
 
-- [ ] Booking create blocks OUT_OF_SERVICE resources.
-- [ ] Booking approve blocks OUT_OF_SERVICE resources.
-- [ ] Pending bookings auto-reject on resource OUT_OF_SERVICE transition.
-- [ ] Rejection reason is stored exactly as agreed.
-- [ ] Notification flow works for auto-rejected bookings.
-- [ ] Booking list and export reflect updated statuses.
-- [ ] Test coverage added for all above cases.
+ [x] Booking create blocks OUT_OF_SERVICE resources.
+ [x] Booking approve blocks OUT_OF_SERVICE resources.
+ [x] Pending bookings auto-reject on resource OUT_OF_SERVICE transition.
+ [x] Rejection reason is stored exactly as agreed.
+ [x] Notification flow works for auto-rejected bookings.
+ [x] Booking list and export reflect updated statuses.
+ [x] Test coverage added for all above cases.
 
 ## Suggested Test Cases for Module B
 

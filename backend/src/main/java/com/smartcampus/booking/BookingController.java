@@ -22,6 +22,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -53,14 +56,32 @@ public class BookingController {
                 page,
                 size
         );
-        return ResponseEntity.ok(response);
+            List<BookingResponse> linkedBookings = response.content().stream()
+                .map(this::addDynamicLinks)
+                .toList();
+
+            Map<String, BookingResponse.LinkResponse> collectionLinks = new LinkedHashMap<>();
+            collectionLinks.put("self", new BookingResponse.LinkResponse("/api/bookings"));
+            collectionLinks.put("create", new BookingResponse.LinkResponse("/api/bookings"));
+
+            PaginatedBookingResponse linkedResponse = new PaginatedBookingResponse(
+                linkedBookings,
+                response.totalElements(),
+                response.totalPages(),
+                response.currentPage(),
+                response.size(),
+                collectionLinks
+            );
+
+            return ResponseEntity.ok(linkedResponse);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<BookingResponse> getBookingById(
             @PathVariable UUID id,
             @AuthenticationPrincipal AuthUserPrincipal principal) {
-        return ResponseEntity.ok(bookingService.getBookingById(id, principal.userId(), principal.role()));
+        BookingResponse response = bookingService.getBookingById(id, principal.userId(), principal.role());
+        return ResponseEntity.ok(addDynamicLinks(response));
     }
 
     @PostMapping
@@ -68,26 +89,26 @@ public class BookingController {
             @Valid @RequestBody CreateBookingRequest request,
             @AuthenticationPrincipal AuthUserPrincipal principal) {
         BookingResponse response = bookingService.createBooking(request, principal.userId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(addDynamicLinks(response));
     }
 
     @PutMapping("/{id}/approve")
     public ResponseEntity<BookingResponse> approveBooking(@PathVariable UUID id) {
-        return ResponseEntity.ok(bookingService.approveBooking(id));
+        return ResponseEntity.ok(addDynamicLinks(bookingService.approveBooking(id)));
     }
 
     @PutMapping("/{id}/reject")
     public ResponseEntity<BookingResponse> rejectBooking(
             @PathVariable UUID id,
             @Valid @RequestBody RejectBookingRequest request) {
-        return ResponseEntity.ok(bookingService.rejectBooking(id, request));
+        return ResponseEntity.ok(addDynamicLinks(bookingService.rejectBooking(id, request)));
     }
 
     @PutMapping("/{id}/cancel")
     public ResponseEntity<BookingResponse> cancelBooking(
             @PathVariable UUID id,
             @AuthenticationPrincipal AuthUserPrincipal principal) {
-        return ResponseEntity.ok(bookingService.cancelBooking(id, principal.userId()));
+        return ResponseEntity.ok(addDynamicLinks(bookingService.cancelBooking(id, principal.userId())));
     }
 
     @GetMapping("/export/pdf")
@@ -118,5 +139,38 @@ public class BookingController {
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .body(excel);
+    }
+
+    private BookingResponse addDynamicLinks(BookingResponse booking) {
+        Map<String, BookingResponse.LinkResponse> links = new LinkedHashMap<>();
+        String id = booking.id().toString();
+
+        links.put("self", new BookingResponse.LinkResponse("/api/bookings/" + id));
+        links.put("all-bookings", new BookingResponse.LinkResponse("/api/bookings"));
+
+        if (booking.status() == BookingStatus.PENDING) {
+            links.put("approve", new BookingResponse.LinkResponse("/api/bookings/" + id + "/approve"));
+            links.put("reject", new BookingResponse.LinkResponse("/api/bookings/" + id + "/reject"));
+        } else if (booking.status() == BookingStatus.APPROVED) {
+            links.put("cancel", new BookingResponse.LinkResponse("/api/bookings/" + id + "/cancel"));
+        }
+
+        return new BookingResponse(
+                booking.id(),
+                booking.userId(),
+                booking.userName(),
+                booking.resourceId(),
+                booking.resourceName(),
+                booking.bookingDate(),
+                booking.startTime(),
+                booking.endTime(),
+                booking.purpose(),
+                booking.attendeesCount(),
+                booking.status(),
+                booking.rejectionReason(),
+                booking.createdAt(),
+                booking.updatedAt(),
+                links
+        );
     }
 }

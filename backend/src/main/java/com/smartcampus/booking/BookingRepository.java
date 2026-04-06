@@ -1,10 +1,14 @@
 package com.smartcampus.booking;
 
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
@@ -51,6 +55,50 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>, JpaSpec
               AND b.id <> :excludeBookingId
             """)
     List<Booking> findConflictingBookingsExcludingId(
+            @Param("resourceId") UUID resourceId,
+            @Param("bookingDate") LocalDate bookingDate,
+            @Param("status") BookingStatus status,
+            @Param("startTime") LocalTime startTime,
+            @Param("endTime") LocalTime endTime,
+            @Param("excludeBookingId") UUID excludeBookingId
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints({
+            @QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000")
+    })
+    @Query("""
+            SELECT b
+            FROM Booking b
+            WHERE b.resource.id = :resourceId
+              AND b.bookingDate = :bookingDate
+              AND b.status = :status
+              AND b.startTime < :endTime
+              AND b.endTime > :startTime
+            """)
+    List<Booking> findConflictingBookingsForUpdate(
+            @Param("resourceId") UUID resourceId,
+            @Param("bookingDate") LocalDate bookingDate,
+            @Param("status") BookingStatus status,
+            @Param("startTime") LocalTime startTime,
+            @Param("endTime") LocalTime endTime
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints({
+            @QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000")
+    })
+    @Query("""
+            SELECT b
+            FROM Booking b
+            WHERE b.resource.id = :resourceId
+              AND b.bookingDate = :bookingDate
+              AND b.status = :status
+              AND b.startTime < :endTime
+              AND b.endTime > :startTime
+              AND b.id <> :excludeBookingId
+            """)
+    List<Booking> findConflictingBookingsExcludingIdForUpdate(
             @Param("resourceId") UUID resourceId,
             @Param("bookingDate") LocalDate bookingDate,
             @Param("status") BookingStatus status,
