@@ -43,6 +43,14 @@ export function ResourceDetailCard({ resource, canManage }: ResourceDetailCardPr
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
+        {resource.status === 'ACTIVE' ? (
+          <Link
+            to={`/student/booking?resourceId=${resource.id}`}
+            className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
+          >
+            Book Now
+          </Link>
+        ) : null}
         <Link to={`/resources/${resource.id}/calendar`} className="rounded-md border border-border/70 px-3 py-2 text-sm">
           View Calendar
         </Link>

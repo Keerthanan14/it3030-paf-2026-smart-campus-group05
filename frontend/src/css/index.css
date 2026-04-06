@@ -170,3 +170,15 @@
     display: none;
   }
 }
+
+.fc .fc-non-business {
+  background: rgba(100, 116, 139, 0.25);
+}
+
+.fc .fc-timegrid-slot {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.dark .fc .fc-timegrid-slot {
+  background: rgba(15, 23, 42, 0.3);
+}

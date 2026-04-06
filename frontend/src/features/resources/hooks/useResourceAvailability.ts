@@ -26,6 +26,11 @@ export function useResourceAvailability(resourceId: string | undefined) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const setRange = (nextFrom: string, nextTo: string) => {
+    setFrom(nextFrom);
+    setTo(nextTo);
+  };
+
   const shiftRange = (days: number) => {
     const fromDate = parseDate(from);
     const toDate = parseDate(to);
@@ -82,6 +87,7 @@ export function useResourceAvailability(resourceId: string | undefined) {
     to,
     setFrom,
     setTo,
+    setRange,
     shiftRange,
     setPresetRange,
     data,

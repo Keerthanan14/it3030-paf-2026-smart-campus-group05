@@ -1,10 +1,21 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ResourceAvailabilityCalendar } from '../../features/resources/components/ResourceAvailabilityCalendar';
 import { useResourceAvailability } from '../../features/resources/hooks/useResourceAvailability';
 
 export default function ResourceCalendarPage() {
   const { id } = useParams();
-  const { from, to, setFrom, setTo, shiftRange, setPresetRange, data, loading, error } = useResourceAvailability(id);
+  const navigate = useNavigate();
+  const { from, to, setRange, data, loading, error } = useResourceAvailability(id);
+
+  const handleBookSlot = (payload: { resourceId: string; date: string; startTime: string; endTime: string }) => {
+    const params = new URLSearchParams({
+      resourceId: payload.resourceId,
+      date: payload.date,
+      startTime: payload.startTime,
+      endTime: payload.endTime,
+    });
+    navigate(`/student/booking?${params.toString()}`);
+  };
 
   return (
     <div className="space-y-6">
@@ -20,15 +31,14 @@ export default function ResourceCalendarPage() {
       <hr className="-mx-4 border-border/70 sm:-mx-6 lg:-mx-8" />
 
       <ResourceAvailabilityCalendar
+        resourceId={id}
         data={data}
         loading={loading}
         error={error}
         from={from}
         to={to}
-        onFromChange={setFrom}
-        onToChange={setTo}
-        onShiftRange={shiftRange}
-        onPresetRange={setPresetRange}
+        onRangeChange={setRange}
+        onBookSlot={handleBookSlot}
       />
     </div>
   );

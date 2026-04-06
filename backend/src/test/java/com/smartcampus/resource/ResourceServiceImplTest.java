@@ -1,17 +1,27 @@
 package com.smartcampus.resource;
 
+import com.smartcampus.booking.Booking;
+import com.smartcampus.booking.BookingRepository;
+import com.smartcampus.booking.BookingStatus;
 import com.smartcampus.booking.BookingService;
+import com.smartcampus.exception.ConflictException;
+import com.smartcampus.resource.dto.CreateResourceRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -27,11 +37,14 @@ class ResourceServiceImplTest {
     @Mock
     private BookingService bookingService;
 
+    @Mock
+    private BookingRepository bookingRepository;
+
     private ResourceServiceImpl resourceService;
 
     @BeforeEach
     void setUp() {
-        resourceService = new ResourceServiceImpl(resourceRepository, bookingService);
+        resourceService = new ResourceServiceImpl(resourceRepository, bookingService, bookingRepository);
     }
 
     @Test
@@ -105,5 +118,103 @@ class ResourceServiceImplTest {
         resourceService.updateResourceStatus(id, ResourceStatus.OUT_OF_SERVICE);
 
         verify(bookingService, never()).autoRejectPendingForResourceOutOfService(eq(id));
+    }
+
+    @Test
+    void getResourceAvailability_shouldReturnApprovedBookedSlotsInRange() {
+        UUID resourceId = UUID.randomUUID();
+        LocalDate from = LocalDate.of(2026, 4, 1);
+        LocalDate to = LocalDate.of(2026, 4, 7);
+
+        Resource resource = new Resource();
+        resource.setId(resourceId);
+        resource.setName("Main Lab");
+        resource.setAvailabilityWindows(Map.of());
+
+        Booking booking = new Booking();
+        booking.setBookingDate(LocalDate.of(2026, 4, 3));
+        booking.setStartTime(LocalTime.of(9, 0));
+        booking.setEndTime(LocalTime.of(11, 0));
+        booking.setPurpose("Seminar");
+
+        when(resourceRepository.findByIdAndDeletedFalse(resourceId)).thenReturn(Optional.of(resource));
+        when(bookingRepository.findByResource_IdAndStatusAndBookingDateBetweenOrderByBookingDateAscStartTimeAsc(
+                resourceId,
+                BookingStatus.APPROVED,
+                from,
+                to
+        )).thenReturn(List.of(booking));
+
+        var result = resourceService.getResourceAvailability(resourceId, from, to);
+
+        assertEquals(1, result.bookedSlots().size());
+        assertEquals("2026-04-03", result.bookedSlots().getFirst().date());
+        assertEquals("09:00", result.bookedSlots().getFirst().startTime());
+        assertEquals("11:00", result.bookedSlots().getFirst().endTime());
+        assertEquals("Seminar", result.bookedSlots().getFirst().purpose());
+    }
+
+    @Test
+    void getResourceAvailability_shouldThrowWhenFromAfterTo() {
+        UUID resourceId = UUID.randomUUID();
+        LocalDate from = LocalDate.of(2026, 4, 10);
+        LocalDate to = LocalDate.of(2026, 4, 1);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> resourceService.getResourceAvailability(resourceId, from, to));
+    }
+
+    @Test
+    void softDeleteResource_shouldThrowConflictWhenFutureApprovedBookingsExist() {
+        UUID resourceId = UUID.randomUUID();
+        Resource resource = new Resource();
+        resource.setId(resourceId);
+
+        when(resourceRepository.findByIdAndDeletedFalse(resourceId)).thenReturn(Optional.of(resource));
+        when(bookingRepository.existsByResource_IdAndStatusAndBookingDateGreaterThanEqual(
+                resourceId,
+                BookingStatus.APPROVED,
+                LocalDate.now()
+        )).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> resourceService.softDeleteResource(resourceId));
+
+        verify(resourceRepository, never()).save(resource);
+    }
+
+    @Test
+    void createResource_shouldThrowWhenAvailabilityWindowTimesAreInvalid() {
+        AvailabilityWindow invalidWindow = new AvailabilityWindow();
+        invalidWindow.setOpen("17:00");
+        invalidWindow.setClose("09:00");
+
+        CreateResourceRequest request = new CreateResourceRequest(
+                "Main Lab",
+                ResourceType.LAB,
+                40,
+                "Block A",
+                "Lab",
+                Map.of("MONDAY", invalidWindow)
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> resourceService.createResource(request));
+    }
+
+    @Test
+    void createResource_shouldThrowWhenAvailabilityWindowFormatIsInvalid() {
+        AvailabilityWindow invalidWindow = new AvailabilityWindow();
+        invalidWindow.setOpen("9:00");
+        invalidWindow.setClose("17:00");
+
+        CreateResourceRequest request = new CreateResourceRequest(
+                "Main Lab",
+                ResourceType.LAB,
+                40,
+                "Block A",
+                "Lab",
+                Map.of("MONDAY", invalidWindow)
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> resourceService.createResource(request));
     }
 }
