@@ -12,6 +12,7 @@ import AdminNotificationsPage from './pages/admin/AdminNotificationsPage';
 import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import AdminResourcesPage from './pages/admin/AdminResourcesPage';
 import AdminTicketsPage from './pages/admin/AdminTicketsPage';
+import AdminBookingsPage from './pages/admin/AdminBookingsPage';
 import StudentDashboardPage from './pages/student/StudentDashboardPage';
 import StudentBookingsPage from './pages/student/StudentBookingsPage';
 import TechnicianDashboardPage from './pages/technician/TechnicianDashboardPage';
@@ -43,6 +44,7 @@ function App() {
               <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
               <Route path="/admin/settings" element={<AdminSettingsPage />} />
               <Route path="/admin/resources" element={<AdminResourcesPage />} />
+              <Route path="/admin/bookings" element={<AdminBookingsPage />} />
               <Route path="/admin/tickets" element={<AdminTicketsPage />} />
             </Route>
 

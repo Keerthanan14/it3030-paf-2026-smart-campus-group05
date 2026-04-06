@@ -5,6 +5,7 @@ import com.smartcampus.booking.BookingStatus;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Map;
 import java.util.UUID;
 
 public record BookingResponse(
@@ -21,6 +22,9 @@ public record BookingResponse(
         BookingStatus status,
         String rejectionReason,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+                LocalDateTime updatedAt,
+                Map<String, LinkResponse> _links
 ) {
+        public record LinkResponse(String href) {
+        }
 }

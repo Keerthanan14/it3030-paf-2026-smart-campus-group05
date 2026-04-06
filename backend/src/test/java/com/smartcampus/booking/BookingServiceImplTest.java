@@ -1,5 +1,6 @@
 package com.smartcampus.booking;
 
+import com.smartcampus.audit.AuditLogService;
 import com.smartcampus.booking.dto.RejectBookingRequest;
 import com.smartcampus.exception.BookingBadRequestException;
 import com.smartcampus.exception.BookingConflictException;
@@ -13,12 +14,15 @@ import com.smartcampus.resource.ResourceStatus;
 import com.smartcampus.resource.ResourceType;
 import com.smartcampus.user.User;
 import com.smartcampus.user.UserRepository;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashMap;
@@ -52,6 +56,9 @@ class BookingServiceImplTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private AuditLogService auditLogService;
+
     private BookingServiceImpl bookingService;
 
     @BeforeEach
@@ -60,7 +67,8 @@ class BookingServiceImplTest {
                 bookingRepository,
                 userRepository,
                 resourceRepository,
-                notificationService
+                notificationService,
+                auditLogService
         );
     }
 
@@ -107,9 +115,9 @@ class BookingServiceImplTest {
         Booking booking = newBooking(bookingId, UUID.randomUUID(), BookingStatus.PENDING);
 
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
-        when(resourceRepository.findByIdAndDeletedFalse(booking.getResource().getId()))
+        when(resourceRepository.findByIdAndDeletedFalseForUpdate(booking.getResource().getId()))
             .thenReturn(Optional.of(booking.getResource()));
-        when(bookingRepository.findConflictingBookingsExcludingId(
+        when(bookingRepository.findConflictingBookingsExcludingIdForUpdate(
                 eq(booking.getResource().getId()),
                 eq(booking.getBookingDate()),
                 eq(BookingStatus.APPROVED),
@@ -133,6 +141,58 @@ class BookingServiceImplTest {
                 () -> bookingService.rejectBooking(bookingId, new RejectBookingRequest("Resource unavailable due to exam")));
     }
 
+    @Test
+    void createBooking_shouldThrowConflictWhenResourceOutOfService() {
+        UUID userId = UUID.randomUUID();
+        UUID resourceId = UUID.randomUUID();
+
+        User user = new User();
+        user.setId(userId);
+
+        Resource resource = new Resource();
+        resource.setId(resourceId);
+        resource.setType(ResourceType.ROOM);
+        resource.setCapacity(30);
+        resource.setStatus(ResourceStatus.OUT_OF_SERVICE);
+        resource.setDeleted(false);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(resourceRepository.findByIdAndDeletedFalseForUpdate(resourceId)).thenReturn(Optional.of(resource));
+
+        BookingConflictException ex = assertThrows(BookingConflictException.class,
+            () -> bookingService.createBooking(
+                new com.smartcampus.booking.dto.CreateBookingRequest(
+                    resourceId,
+                    LocalDate.now().plusDays(1),
+                    LocalTime.of(9, 0),
+                    LocalTime.of(10, 0),
+                    "Project meeting",
+                    10
+                ),
+                userId
+            ));
+
+        org.junit.jupiter.api.Assertions.assertEquals("Resource is out of service.", ex.getMessage());
+    }
+
+    @Test
+    void approveBooking_shouldThrowConflictWhenResourceOutOfService() {
+        UUID bookingId = UUID.randomUUID();
+        Booking booking = newBooking(bookingId, UUID.randomUUID(), BookingStatus.PENDING);
+
+        Resource outOfServiceResource = booking.getResource();
+        outOfServiceResource.setStatus(ResourceStatus.OUT_OF_SERVICE);
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+        when(resourceRepository.findByIdAndDeletedFalseForUpdate(outOfServiceResource.getId()))
+            .thenReturn(Optional.of(outOfServiceResource));
+
+        BookingConflictException ex = assertThrows(BookingConflictException.class,
+                () -> bookingService.approveBooking(bookingId));
+
+        org.junit.jupiter.api.Assertions.assertEquals("Cannot approve booking. Resource is out of service.", ex.getMessage());
+    }
+
         @Test
         void createBooking_shouldThrowBadRequestWhenAttendeesMissingForRoom() {
         UUID userId = UUID.randomUUID();
@@ -149,7 +209,7 @@ class BookingServiceImplTest {
         resource.setDeleted(false);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(resourceRepository.findByIdAndDeletedFalse(resourceId)).thenReturn(Optional.of(resource));
+        when(resourceRepository.findByIdAndDeletedFalseForUpdate(resourceId)).thenReturn(Optional.of(resource));
 
         assertThrows(BookingBadRequestException.class,
             () -> bookingService.createBooking(
@@ -191,7 +251,7 @@ class BookingServiceImplTest {
         LocalDate mondayDate = LocalDate.of(2026, 4, 6);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(resourceRepository.findByIdAndDeletedFalse(resourceId)).thenReturn(Optional.of(resource));
+        when(resourceRepository.findByIdAndDeletedFalseForUpdate(resourceId)).thenReturn(Optional.of(resource));
 
         assertThrows(BookingBadRequestException.class,
             () -> bookingService.createBooking(
@@ -229,6 +289,26 @@ class BookingServiceImplTest {
 
         verify(bookingRepository).saveAll(List.of(first, second));
         verify(notificationService, times(2)).sendBookingNotification(any(), any(), eq(false), eq("Resource is out of service."));
+    }
+
+    @Test
+    void exportBookingsExcel_shouldIncludeRejectedRecordAndReason() throws Exception {
+        UUID bookingId = UUID.randomUUID();
+        Booking rejected = newBooking(bookingId, UUID.randomUUID(), BookingStatus.REJECTED);
+        rejected.setRejectionReason("Resource is out of service.");
+
+        when(bookingRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Sort.class)))
+                .thenReturn(List.of(rejected));
+
+        byte[] excel = bookingService.exportBookingsExcel(null, null, null, null);
+
+        try (Workbook workbook = new XSSFWorkbook(new ByteArrayInputStream(excel))) {
+            org.apache.poi.ss.usermodel.Sheet sheet = workbook.getSheet("Bookings Report");
+            org.junit.jupiter.api.Assertions.assertEquals("Status", sheet.getRow(0).getCell(8).getStringCellValue());
+            org.junit.jupiter.api.Assertions.assertEquals("Rejection Reason", sheet.getRow(0).getCell(9).getStringCellValue());
+            org.junit.jupiter.api.Assertions.assertEquals("REJECTED", sheet.getRow(1).getCell(8).getStringCellValue());
+            org.junit.jupiter.api.Assertions.assertEquals("Resource is out of service.", sheet.getRow(1).getCell(9).getStringCellValue());
+        }
     }
 
     private Resource newResource(UUID id) {

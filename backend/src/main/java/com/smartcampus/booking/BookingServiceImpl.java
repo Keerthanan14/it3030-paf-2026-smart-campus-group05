@@ -1,5 +1,6 @@
 package com.smartcampus.booking;
 
+import com.smartcampus.audit.AuditLogService;
 import com.smartcampus.booking.dto.BookingResponse;
 import com.smartcampus.booking.dto.CreateBookingRequest;
 import com.smartcampus.booking.dto.PaginatedBookingResponse;
@@ -22,6 +23,7 @@ import com.smartcampus.resource.Resource;
 import com.smartcampus.resource.ResourceRepository;
 import com.smartcampus.resource.ResourceStatus;
 import com.smartcampus.resource.ResourceType;
+import com.smartcampus.security.AuthUserPrincipal;
 import com.smartcampus.user.User;
 import com.smartcampus.user.UserRepository;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -30,6 +32,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -46,25 +49,31 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Service
 public class BookingServiceImpl implements BookingService {
 
     private static final String OUT_OF_SERVICE_REJECTION_REASON = "Resource is out of service.";
+    private static final String BOOKING_ENTITY_TYPE = "BOOKING";
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
     private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public BookingServiceImpl(BookingRepository bookingRepository,
                               UserRepository userRepository,
                               ResourceRepository resourceRepository,
-                              NotificationService notificationService) {
+                              NotificationService notificationService,
+                              AuditLogService auditLogService) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
         this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
     }
 
     @Override
@@ -105,7 +114,8 @@ public class BookingServiceImpl implements BookingService {
                 result.getTotalElements(),
                 result.getTotalPages(),
                 result.getNumber(),
-                result.getSize()
+            result.getSize(),
+            null
         );
     }
 
@@ -131,7 +141,7 @@ public class BookingServiceImpl implements BookingService {
         User bookingOwner = userRepository.findById(requesterUserId)
                 .orElseThrow(() -> new BookingNotFoundException("User not found for id: " + requesterUserId));
 
-        Resource resource = resourceRepository.findByIdAndDeletedFalse(request.resourceId())
+        Resource resource = resourceRepository.findByIdAndDeletedFalseForUpdate(request.resourceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Resource not found for id: " + request.resourceId()));
 
         if (!isResourceBookable(resource)) {
@@ -141,14 +151,12 @@ public class BookingServiceImpl implements BookingService {
         validateAttendeesCount(resource, request.attendeesCount());
         validateWithinAvailabilityWindow(resource, request.bookingDate(), request.startTime(), request.endTime());
 
-        boolean hasConflict = bookingRepository
-                .existsByResource_IdAndBookingDateAndStatusAndStartTimeLessThanAndEndTimeGreaterThan(
-                        resource.getId(),
-                        request.bookingDate(),
-                        BookingStatus.APPROVED,
-                        request.endTime(),
-                        request.startTime()
-                );
+        boolean hasConflict = hasLockedConflict(
+            resource.getId(),
+            request.bookingDate(),
+            request.startTime(),
+            request.endTime()
+        );
 
         if (hasConflict) {
             throw new BookingConflictException("Booking conflict detected for the selected slot");
@@ -177,7 +185,7 @@ public class BookingServiceImpl implements BookingService {
             throw new BookingBadRequestException("Only PENDING bookings can be approved");
         }
 
-        Resource latestResource = resourceRepository.findByIdAndDeletedFalse(booking.getResource().getId())
+        Resource latestResource = resourceRepository.findByIdAndDeletedFalseForUpdate(booking.getResource().getId())
             .orElseThrow(() -> new ResourceNotFoundException("Resource not found for id: " + booking.getResource().getId()));
 
         if (!isResourceBookable(latestResource)) {
@@ -191,22 +199,30 @@ public class BookingServiceImpl implements BookingService {
             booking.getEndTime()
         );
 
-        boolean hasConflict = !bookingRepository.findConflictingBookingsExcludingId(
-                booking.getResource().getId(),
-                booking.getBookingDate(),
-                BookingStatus.APPROVED,
-                booking.getStartTime(),
-                booking.getEndTime(),
-                booking.getId()
-        ).isEmpty();
+        boolean hasConflict = hasLockedConflictExcludingCurrent(
+            booking.getResource().getId(),
+            booking.getBookingDate(),
+            booking.getStartTime(),
+            booking.getEndTime(),
+            booking.getId()
+        );
 
         if (hasConflict) {
             throw new BookingConflictException("Cannot approve booking due to schedule conflict");
         }
 
+        BookingStatus previousStatus = booking.getStatus();
         booking.setStatus(BookingStatus.APPROVED);
         booking.setRejectionReason(null);
         Booking saved = bookingRepository.save(booking);
+
+        logBookingStatusChange(
+            resolveAuthenticatedUserId(),
+            "APPROVE",
+            saved,
+            previousStatus,
+            saved.getStatus()
+        );
 
         notificationService.sendBookingNotification(saved.getUser().getId(), saved.getId(), true, null);
 
@@ -223,9 +239,18 @@ public class BookingServiceImpl implements BookingService {
             throw new BookingBadRequestException("Only PENDING bookings can be rejected");
         }
 
+        BookingStatus previousStatus = booking.getStatus();
         booking.setStatus(BookingStatus.REJECTED);
         booking.setRejectionReason(request.rejectionReason());
         Booking saved = bookingRepository.save(booking);
+
+        logBookingStatusChange(
+            resolveAuthenticatedUserId(),
+            "REJECT",
+            saved,
+            previousStatus,
+            saved.getStatus()
+        );
 
         notificationService.sendBookingNotification(saved.getUser().getId(), saved.getId(), false, request.rejectionReason());
 
@@ -246,8 +271,18 @@ public class BookingServiceImpl implements BookingService {
             throw new BookingBadRequestException("Only APPROVED bookings can be cancelled");
         }
 
+        BookingStatus previousStatus = booking.getStatus();
         booking.setStatus(BookingStatus.CANCELLED);
         Booking saved = bookingRepository.save(booking);
+
+        logBookingStatusChange(
+                requesterUserId,
+                "CANCEL",
+                saved,
+                previousStatus,
+                saved.getStatus()
+        );
+
         return toResponse(saved);
     }
 
@@ -260,6 +295,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         for (Booking booking : pendingBookings) {
+            BookingStatus previousStatus = booking.getStatus();
             booking.setStatus(BookingStatus.REJECTED);
             booking.setRejectionReason(OUT_OF_SERVICE_REJECTION_REASON);
             notificationService.sendBookingNotification(
@@ -267,6 +303,13 @@ public class BookingServiceImpl implements BookingService {
                     booking.getId(),
                     false,
                     OUT_OF_SERVICE_REJECTION_REASON
+            );
+            logBookingStatusChange(
+                null,
+                "AUTO_REJECT",
+                booking,
+                previousStatus,
+                booking.getStatus()
             );
         }
 
@@ -412,8 +455,76 @@ public class BookingServiceImpl implements BookingService {
         return id.substring(0, Math.min(8, id.length()));
     }
 
+    private UUID resolveAuthenticatedUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return null;
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof AuthUserPrincipal authUserPrincipal) {
+            return authUserPrincipal.userId();
+        }
+
+        return null;
+    }
+
+    private void logBookingStatusChange(UUID actorUserId,
+                                        String action,
+                                        Booking booking,
+                                        BookingStatus oldStatus,
+                                        BookingStatus newStatus) {
+        auditLogService.logAction(
+                actorUserId,
+                action,
+                BOOKING_ENTITY_TYPE,
+                booking.getId(),
+                Map.of("status", oldStatus.name()),
+                Map.of(
+                        "status", newStatus.name(),
+                        "rejectionReason", booking.getRejectionReason() == null ? "" : booking.getRejectionReason()
+                )
+        );
+    }
+
     private boolean isResourceBookable(Resource resource) {
         return resource.getStatus() == ResourceStatus.ACTIVE && !resource.isDeleted();
+    }
+
+    private boolean hasLockedConflict(UUID resourceId,
+                                      LocalDate bookingDate,
+                                      LocalTime startTime,
+                                      LocalTime endTime) {
+        try {
+            return !bookingRepository.findConflictingBookingsForUpdate(
+                    resourceId,
+                    bookingDate,
+                    BookingStatus.APPROVED,
+                    startTime,
+                    endTime
+            ).isEmpty();
+        } catch (PessimisticLockingFailureException ex) {
+            throw new BookingConflictException("Booking is being processed by another request. Please retry.");
+        }
+    }
+
+    private boolean hasLockedConflictExcludingCurrent(UUID resourceId,
+                                                      LocalDate bookingDate,
+                                                      LocalTime startTime,
+                                                      LocalTime endTime,
+                                                      UUID excludeBookingId) {
+        try {
+            return !bookingRepository.findConflictingBookingsExcludingIdForUpdate(
+                    resourceId,
+                    bookingDate,
+                    BookingStatus.APPROVED,
+                    startTime,
+                    endTime,
+                    excludeBookingId
+            ).isEmpty();
+        } catch (PessimisticLockingFailureException ex) {
+            throw new BookingConflictException("Booking is being processed by another request. Please retry.");
+        }
     }
 
     private void validateAttendeesCount(Resource resource, Integer attendeesCount) {
@@ -487,7 +598,8 @@ public class BookingServiceImpl implements BookingService {
                 booking.getStatus(),
                 booking.getRejectionReason(),
                 booking.getCreatedAt(),
-                booking.getUpdatedAt()
+                booking.getUpdatedAt(),
+                null
         );
     }
 }
