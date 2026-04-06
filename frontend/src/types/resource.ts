@@ -18,6 +18,17 @@ export interface ResourceItem {
 	status: ResourceStatus;
 	createdAt: string;
 	updatedAt: string;
+	_links?: Record<string, { href: string }>;
+}
+
+export interface ResourceFormValues {
+	name: string;
+	type: ResourceType;
+	capacity: number;
+	location: string;
+	description?: string;
+	availabilityWindows?: Record<string, AvailabilityWindow>;
+	status?: ResourceStatus;
 }
 
 export interface ResourceFilters {
@@ -34,4 +45,18 @@ export interface PaginatedResourceResponse {
 	totalPages: number;
 	currentPage: number;
 	size: number;
+}
+
+export interface BookedSlot {
+	date: string;
+	startTime: string;
+	endTime: string;
+	purpose?: string;
+}
+
+export interface ResourceAvailabilityResponse {
+	resourceId: string;
+	resourceName: string;
+	availabilityWindows?: Record<string, AvailabilityWindow> | null;
+	bookedSlots: BookedSlot[];
 }

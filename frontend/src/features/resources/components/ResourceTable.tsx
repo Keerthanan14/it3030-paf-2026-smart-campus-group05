@@ -1,13 +1,15 @@
 import type { ResourceItem } from '../../../types/resource';
+import { Link } from 'react-router-dom';
 
 interface ResourceTableProps {
   items: ResourceItem[];
   loading: boolean;
-  onToggleStatus: (id: string, nextStatus: 'ACTIVE' | 'OUT_OF_SERVICE') => void;
-  onDelete: (id: string) => void;
+  canManage?: boolean;
+  onToggleStatus?: (id: string, nextStatus: 'ACTIVE' | 'OUT_OF_SERVICE') => void;
+  onDelete?: (id: string) => void;
 }
 
-export function ResourceTable({ items, loading, onToggleStatus, onDelete }: ResourceTableProps) {
+export function ResourceTable({ items, loading, canManage = true, onToggleStatus, onDelete }: ResourceTableProps) {
   if (loading) {
     return <div className="rounded-lg border border-border/60 bg-card p-4 text-sm">Loading resources...</div>;
   }
@@ -51,20 +53,36 @@ export function ResourceTable({ items, loading, onToggleStatus, onDelete }: Reso
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
+                    <Link
+                      to={`/resources/${item.id}`}
                       className="rounded-md border border-border/70 px-3 py-1.5 text-xs"
-                      onClick={() => onToggleStatus(item.id, nextStatus)}
                     >
-                      Mark {nextStatus}
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-md border border-rose-300 px-3 py-1.5 text-xs text-rose-700"
-                      onClick={() => onDelete(item.id)}
-                    >
-                      Delete
-                    </button>
+                      View
+                    </Link>
+                    {canManage ? (
+                      <>
+                        <Link
+                          to={`/admin/resources/${item.id}/edit`}
+                          className="rounded-md border border-border/70 px-3 py-1.5 text-xs"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          type="button"
+                          className="rounded-md border border-border/70 px-3 py-1.5 text-xs"
+                          onClick={() => onToggleStatus?.(item.id, nextStatus)}
+                        >
+                          Mark {nextStatus}
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md border border-rose-300 px-3 py-1.5 text-xs text-rose-700"
+                          onClick={() => onDelete?.(item.id)}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    ) : null}
                   </div>
                 </td>
               </tr>

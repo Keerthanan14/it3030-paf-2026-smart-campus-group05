@@ -1,9 +1,8 @@
 import { ResourceFilters } from '../../features/resources/components/ResourceFilters';
 import { ResourceTable } from '../../features/resources/components/ResourceTable';
 import { useAdminResources } from '../../features/resources/hooks/useAdminResources';
-import { Link } from 'react-router-dom';
 
-export default function AdminResourcesPage() {
+export default function ResourcesCatalogPage() {
   const {
     resources,
     filters,
@@ -16,25 +15,13 @@ export default function AdminResourcesPage() {
     setPage,
     setPageSize,
     applyFilters,
-    updateStatus,
-    removeResource,
   } = useAdminResources();
 
   return (
     <div className="space-y-6">
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Resource Management</h1>
-            <p className="mt-1 text-sm text-foreground/70">Manage campus resources, availability, and scheduling rules.</p>
-          </div>
-          <Link
-            to="/admin/resources/new"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-          >
-            Add Resource
-          </Link>
-        </div>
+        <h1 className="text-2xl font-bold tracking-tight">Resources</h1>
+        <p className="mt-1 text-sm text-foreground/70">Explore available campus resources and open each profile for details.</p>
         <hr className="mt-4 -mx-4 border-border/70 sm:-mx-6 lg:-mx-8" />
       </div>
 
@@ -42,20 +29,11 @@ export default function AdminResourcesPage() {
 
       {error ? <div className="rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700">{error}</div> : null}
 
-      <ResourceTable
-        items={resources}
-        loading={loading}
-        onToggleStatus={(id, nextStatus) => {
-          void updateStatus(id, nextStatus);
-        }}
-        onDelete={(id) => {
-          void removeResource(id);
-        }}
-      />
+      <ResourceTable items={resources} loading={loading} canManage={false} />
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-card p-4">
         <p className="text-sm text-foreground/70">
-          Showing page {page + 1} of {Math.max(totalPages, 1)} ({totalElements} total resources)
+          Showing page {page + 1} of {Math.max(totalPages, 1)} ({totalElements} resources)
         </p>
         <div className="flex items-center gap-2">
           <select

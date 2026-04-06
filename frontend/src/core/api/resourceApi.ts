@@ -1,5 +1,12 @@
 import api from './client';
-import type { PaginatedResourceResponse, ResourceFilters, ResourceStatus } from '../../types/resource';
+import type {
+	PaginatedResourceResponse,
+	ResourceAvailabilityResponse,
+	ResourceFilters,
+	ResourceFormValues,
+	ResourceItem,
+	ResourceStatus,
+} from '../../types/resource';
 
 interface ListParams {
 	page?: number;
@@ -7,9 +14,23 @@ interface ListParams {
 	filters?: Partial<ResourceFilters>;
 }
 
+type MaybeHateoasModel<T> = T & { content?: T };
+
+function unwrapModel<T>(payload: MaybeHateoasModel<T>): T {
+	return payload.content ?? payload;
+}
+
+function toResourceItem(payload: MaybeHateoasModel<ResourceItem>): ResourceItem {
+	return unwrapModel(payload);
+}
+
 export const resourceApi = {
-	listResources({ page = 0, size = 10, filters = {} }: ListParams) {
-		return api.get<PaginatedResourceResponse>('/resources', {
+	async listResources({ page = 0, size = 10, filters = {} }: ListParams) {
+		const response = await api.get<
+			PaginatedResourceResponse & {
+				_embedded?: { resources?: Array<MaybeHateoasModel<ResourceItem>> };
+			}
+		>('/resources', {
 			params: {
 				page,
 				size,
@@ -19,6 +40,41 @@ export const resourceApi = {
 				type: filters.type || undefined,
 				status: filters.status || undefined,
 			},
+		});
+
+		const payload = response.data;
+		const content = payload.content?.length
+			? payload.content
+			: (payload._embedded?.resources ?? []).map(toResourceItem);
+
+		return {
+			...response,
+			data: {
+				...payload,
+				content,
+			},
+		};
+	},
+
+	async getResourceById(id: string) {
+		const response = await api.get<MaybeHateoasModel<ResourceItem>>(`/resources/${id}`);
+		return {
+			...response,
+			data: toResourceItem(response.data),
+		};
+	},
+
+	createResource(payload: ResourceFormValues) {
+		return api.post('/resources', payload);
+	},
+
+	updateResource(id: string, payload: ResourceFormValues) {
+		return api.put(`/resources/${id}`, payload);
+	},
+
+	getAvailability(id: string, from: string, to: string) {
+		return api.get<ResourceAvailabilityResponse>(`/resources/${id}/availability`, {
+			params: { from, to },
 		});
 	},
 

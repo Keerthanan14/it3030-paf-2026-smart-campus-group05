@@ -22,12 +22,10 @@ export function useAdminResources() {
     setError(null);
     try {
       const { data } = await resourceApi.listResources({ page, size, filters });
-      const payload = data as PaginatedResourceResponse & {
-        _embedded?: { resources?: ResourceItem[] };
-      };
-      setResources(payload.content ?? payload._embedded?.resources ?? []);
-      setTotalPages(payload.totalPages);
-      setTotalElements(payload.totalElements);
+      const payload = data as PaginatedResourceResponse;
+      setResources(payload.content ?? []);
+      setTotalPages(payload.totalPages ?? 0);
+      setTotalElements(payload.totalElements ?? 0);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch resources';
       setError(message);

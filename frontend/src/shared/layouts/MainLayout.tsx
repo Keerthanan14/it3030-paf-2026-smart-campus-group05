@@ -36,12 +36,14 @@ export function MainLayout() {
 
     if (role === 'admin') {
       nav.push(
+        { name: 'Browse Resources', href: '/resources', icon: Calendar },
         { name: 'Resources', href: '/admin/resources', icon: Home },
         { name: 'Incidents', href: '/admin/tickets', icon: Ticket },
         { name: 'System Settings', href: '/admin/settings', icon: Settings }
       );
     } else if (role === 'student' || role === 'staff') {
       nav.push(
+        { name: 'Resources', href: '/resources', icon: Home },
         { name: 'My Bookings', href: '/student/booking', icon: Calendar },
         { name: 'My Tickets', href: '/student/tickets', icon: Ticket },
         { name: 'Notifications', href: '/student/notifications', icon: Bell },
@@ -49,6 +51,7 @@ export function MainLayout() {
       );
     } else if (role === 'technician') {
       nav.push(
+        { name: 'Resources', href: '/resources', icon: Home },
         { name: 'Assigned Tickets', href: '/technician/tickets', icon: Ticket }
       );
     }
