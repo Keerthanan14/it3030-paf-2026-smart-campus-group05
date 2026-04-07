@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Calendar, LayoutDashboard, Ticket, Bell, Settings } from 'lucide-react';
+import { Home, Calendar, LayoutDashboard, Ticket, Bell, Settings, Users } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '../../core/store/authStore';
 import { Navbar } from '../components/layout/Navbar';
@@ -36,9 +36,12 @@ export function MainLayout() {
 
     if (role === 'admin') {
       nav.push(
+        { name: 'User Management', href: '/admin/users', icon: Users },
         { name: 'Browse Resources', href: '/admin/resources/browse', icon: Calendar },
         { name: 'Resources', href: '/admin/resources', icon: Home },
         { name: 'Bookings', href: '/admin/bookings', icon: Calendar },
+        { name: 'Tickets', href: '/admin/tickets', icon: Ticket },
+        { name: 'Notifications', href: '/admin/notifications', icon: Bell },
         { name: 'System Settings', href: '/admin/settings', icon: Settings }
       );
     } else if (role === 'student' || role === 'staff') {
