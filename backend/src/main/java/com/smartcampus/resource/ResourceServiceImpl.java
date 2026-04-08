@@ -89,14 +89,37 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     public ResourceResponse createResource(CreateResourceRequest request) {
         validateAvailabilityWindows(request.availabilityWindows());
+        int normalizedCapacity = normalizeCapacity(request.type(), request.capacity());
 
         Resource resource = new Resource();
         resource.setName(request.name());
         resource.setType(request.type());
-        resource.setCapacity(request.capacity());
-        resource.setLocation(request.location());
+        resource.setCapacity(normalizedCapacity);
+        resource.setBuilding(request.building());
+        resource.setFloor(request.floor());
+        resource.setLocation(formatLocation(request.building(), request.floor()));
+        resource.setChairCount(request.chairCount());
+        resource.setTableCount(request.tableCount());
+        resource.setPcCount(request.pcCount());
+        resource.setEquipmentCount(request.equipmentCount());
+        resource.setHasAc(request.hasAc());
+        resource.setHasFan(request.hasFan());
+        resource.setHasProjector(request.hasProjector());
+        resource.setHasSmartboard(request.hasSmartboard());
+        resource.setHasCamera(request.hasCamera());
+        resource.setHasPodiumWithPc(Boolean.TRUE.equals(request.hasPodiumWithPc()));
+        resource.setHasPodium(Boolean.TRUE.equals(request.hasPodium()));
+        resource.setHasWhiteboard(Boolean.TRUE.equals(request.hasWhiteboard()));
+        resource.setHasClock(Boolean.TRUE.equals(request.hasClock()));
+        resource.setHasLectureChairs(Boolean.TRUE.equals(request.hasLectureChairs()));
+        resource.setHasLectureDesks(Boolean.TRUE.equals(request.hasLectureDesks()));
+        resource.setHasSpeakers(Boolean.TRUE.equals(request.hasSpeakers()));
+        resource.setHasWifi(Boolean.TRUE.equals(request.hasWifi()));
+        resource.setHasPowerOutlets(Boolean.TRUE.equals(request.hasPowerOutlets()));
         resource.setDescription(request.description());
         resource.setAvailabilityWindows(request.availabilityWindows());
+        resource.setAllowBookings(Boolean.TRUE.equals(request.allowBookings()));
+        resource.setAllowRequests(Boolean.TRUE.equals(request.allowRequests()));
         resource.setStatus(ResourceStatus.ACTIVE);
 
         return toResponse(resourceRepository.save(resource));
@@ -105,14 +128,37 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     public ResourceResponse updateResource(UUID id, UpdateResourceRequest request) {
         validateAvailabilityWindows(request.availabilityWindows());
+        int normalizedCapacity = normalizeCapacity(request.type(), request.capacity());
 
         Resource resource = getExistingResource(id);
         resource.setName(request.name());
         resource.setType(request.type());
-        resource.setCapacity(request.capacity());
-        resource.setLocation(request.location());
+        resource.setCapacity(normalizedCapacity);
+        resource.setBuilding(request.building());
+        resource.setFloor(request.floor());
+        resource.setLocation(formatLocation(request.building(), request.floor()));
+        resource.setChairCount(request.chairCount());
+        resource.setTableCount(request.tableCount());
+        resource.setPcCount(request.pcCount());
+        resource.setEquipmentCount(request.equipmentCount());
+        resource.setHasAc(request.hasAc());
+        resource.setHasFan(request.hasFan());
+        resource.setHasProjector(request.hasProjector());
+        resource.setHasSmartboard(request.hasSmartboard());
+        resource.setHasCamera(request.hasCamera());
+        resource.setHasPodiumWithPc(Boolean.TRUE.equals(request.hasPodiumWithPc()));
+        resource.setHasPodium(Boolean.TRUE.equals(request.hasPodium()));
+        resource.setHasWhiteboard(Boolean.TRUE.equals(request.hasWhiteboard()));
+        resource.setHasClock(Boolean.TRUE.equals(request.hasClock()));
+        resource.setHasLectureChairs(Boolean.TRUE.equals(request.hasLectureChairs()));
+        resource.setHasLectureDesks(Boolean.TRUE.equals(request.hasLectureDesks()));
+        resource.setHasSpeakers(Boolean.TRUE.equals(request.hasSpeakers()));
+        resource.setHasWifi(Boolean.TRUE.equals(request.hasWifi()));
+        resource.setHasPowerOutlets(Boolean.TRUE.equals(request.hasPowerOutlets()));
         resource.setDescription(request.description());
         resource.setAvailabilityWindows(request.availabilityWindows());
+        resource.setAllowBookings(Boolean.TRUE.equals(request.allowBookings()));
+        resource.setAllowRequests(Boolean.TRUE.equals(request.allowRequests()));
         resource.setStatus(request.status());
 
         return toResponse(resourceRepository.save(resource));
@@ -243,18 +289,63 @@ public class ResourceServiceImpl implements ResourceService {
         }
     }
 
+    private int normalizeCapacity(ResourceType type, Integer capacity) {
+        if (type == null) {
+            throw new IllegalArgumentException("type is required");
+        }
+
+        if (type == ResourceType.EQUIPMENT) {
+            return capacity == null ? 0 : capacity;
+        }
+
+        if (capacity == null || capacity < 1) {
+            throw new IllegalArgumentException("capacity must be at least 1 for non-equipment resources");
+        }
+
+        return capacity;
+    }
+
     private ResourceResponse toResponse(Resource resource) {
         return new ResourceResponse(
                 resource.getId(),
                 resource.getName(),
                 resource.getType(),
                 resource.getCapacity(),
+                resource.getBuilding(),
+                resource.getFloor(),
                 resource.getLocation(),
+                resource.getChairCount(),
+                resource.getTableCount(),
+                resource.getPcCount(),
+                resource.getEquipmentCount(),
+                resource.getHasAc(),
+                resource.getHasFan(),
+                resource.getHasProjector(),
+                resource.getHasSmartboard(),
+                resource.getHasCamera(),
+                resource.getHasPodiumWithPc(),
+                resource.getHasPodium(),
+                resource.getHasWhiteboard(),
+                resource.getHasClock(),
+                resource.getHasLectureChairs(),
+                resource.getHasLectureDesks(),
+                resource.getHasSpeakers(),
+                resource.getHasWifi(),
+                resource.getHasPowerOutlets(),
                 resource.getDescription(),
                 resource.getAvailabilityWindows(),
+                resource.getAllowBookings(),
+                resource.getAllowRequests(),
                 resource.getStatus(),
                 resource.getCreatedAt(),
                 resource.getUpdatedAt()
         );
+    }
+
+    private String formatLocation(String building, Integer floor) {
+        if (building == null || building.isBlank() || floor == null) {
+            return "";
+        }
+        return building + " - Floor " + floor;
     }
 }

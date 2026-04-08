@@ -3,6 +3,7 @@ package com.smartcampus.resource.dto;
 import com.smartcampus.resource.AvailabilityWindow;
 import com.smartcampus.resource.ResourceStatus;
 import com.smartcampus.resource.ResourceType;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,10 +14,31 @@ import java.util.Map;
 public record UpdateResourceRequest(
         @NotBlank @Size(min = 3, max = 255) String name,
         @NotNull ResourceType type,
-        @NotNull @Min(1) Integer capacity,
-        @NotBlank @Size(min = 3, max = 255) String location,
+        @Min(0) Integer capacity,
+        @NotBlank String building,
+        @NotNull @Min(0) @Max(5) Integer floor,
+        @NotNull @Min(0) Integer chairCount,
+        @NotNull @Min(0) Integer tableCount,
+        @NotNull Boolean hasAc,
+        @NotNull Boolean hasFan,
+        @NotNull Boolean hasProjector,
+        @NotNull Boolean hasSmartboard,
+        @NotNull Boolean hasCamera,
+        Boolean hasPodiumWithPc,
+        Boolean hasPodium,
+        Boolean hasWhiteboard,
+        Boolean hasClock,
+        Boolean hasLectureChairs,
+        Boolean hasLectureDesks,
+        Boolean hasSpeakers,
+        Boolean hasWifi,
+        Boolean hasPowerOutlets,
+        @Min(0) Integer pcCount,
+        @Min(0) Integer equipmentCount,
         @Size(max = 1000) String description,
         Map<String, AvailabilityWindow> availabilityWindows,
+        Boolean allowBookings,
+        Boolean allowRequests,
         @NotNull ResourceStatus status
 ) {
 }

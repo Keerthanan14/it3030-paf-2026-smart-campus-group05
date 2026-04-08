@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { resourceApi } from '../../../core/api/resourceApi';
-import type { AvailabilityWindow, ResourceFormValues, ResourceStatus, ResourceType } from '../../../types/resource';
+import type { AvailabilityWindow, BuildingType, ResourceFormValues, ResourceStatus, ResourceType } from '../../../types/resource';
 
 const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
 
@@ -13,11 +13,32 @@ function buildDefaultWindows(): Record<string, AvailabilityWindow> {
 
 const initialValues: ResourceFormValues = {
   name: '',
-  type: 'ROOM',
+  type: '',
   capacity: 1,
-  location: '',
+  building: '',
+  floor: '',
+  chairCount: 0,
+  tableCount: 0,
+  hasAc: false,
+  hasFan: false,
+  hasProjector: false,
+  hasSmartboard: false,
+  hasCamera: false,
+  hasPodiumWithPc: false,
+  hasPodium: false,
+  hasWhiteboard: false,
+  hasClock: false,
+  hasLectureChairs: false,
+  hasLectureDesks: false,
+  hasSpeakers: false,
+  hasPowerOutlets: false,
+  hasWifi: false,
+  pcCount: 0,
+  equipmentCount: 0,
   description: '',
   status: 'ACTIVE',
+  allowBookings: false,
+  allowRequests: false,
   availabilityWindows: buildDefaultWindows(),
 };
 
@@ -49,9 +70,30 @@ export function useResourceForm(id?: string) {
           name: data.name,
           type: data.type,
           capacity: data.capacity,
-          location: data.location,
+          building: data.building ?? 'MAIN',
+          floor: data.floor ?? 1,
+          chairCount: data.chairCount ?? 0,
+          tableCount: data.tableCount ?? 0,
+          hasAc: data.hasAc ?? false,
+          hasFan: data.hasFan ?? false,
+          hasProjector: data.hasProjector ?? false,
+          hasSmartboard: data.hasSmartboard ?? false,
+          hasCamera: data.hasCamera ?? false,
+          hasPodiumWithPc: data.hasPodiumWithPc ?? false,
+          hasPodium: data.hasPodium ?? false,
+          hasWhiteboard: data.hasWhiteboard ?? false,
+          hasClock: data.hasClock ?? false,
+          hasLectureChairs: data.hasLectureChairs ?? false,
+          hasLectureDesks: data.hasLectureDesks ?? false,
+          hasSpeakers: data.hasSpeakers ?? false,
+          hasPowerOutlets: data.hasPowerOutlets ?? false,
+          hasWifi: data.hasWifi ?? false,
+          pcCount: data.pcCount ?? 0,
+          equipmentCount: data.equipmentCount ?? 0,
           description: data.description ?? '',
           status: data.status,
+          allowBookings: data.allowBookings ?? true,
+          allowRequests: data.allowRequests ?? true,
           availabilityWindows: data.availabilityWindows ?? buildDefaultWindows(),
         });
       } catch (err) {
@@ -93,13 +135,49 @@ export function useResourceForm(id?: string) {
     setSaving(true);
     setError(null);
     try {
+      if (!values.type) {
+        setError('Please select a type');
+        return false;
+      }
+
+      if (!values.building) {
+        setError('Please select a building');
+        return false;
+      }
+
+      if (values.floor === '') {
+        setError('Please select a floor');
+        return false;
+      }
+
       const payload: ResourceFormValues = {
         name: values.name,
         type: values.type as ResourceType,
         capacity: Number(values.capacity),
-        location: values.location,
+        building: values.building as BuildingType,
+        floor: Number(values.floor),
+        chairCount: Number(values.chairCount),
+        tableCount: Number(values.tableCount),
+        hasAc: Boolean(values.hasAc),
+        hasFan: Boolean(values.hasFan),
+        hasProjector: Boolean(values.hasProjector),
+        hasSmartboard: Boolean(values.hasSmartboard),
+        hasCamera: Boolean(values.hasCamera),
+        hasPodiumWithPc: Boolean(values.hasPodiumWithPc),
+        hasPodium: Boolean(values.hasPodium),
+        hasWhiteboard: Boolean(values.hasWhiteboard),
+        hasClock: Boolean(values.hasClock),
+        hasLectureChairs: Boolean(values.hasLectureChairs),
+        hasLectureDesks: Boolean(values.hasLectureDesks),
+        hasSpeakers: Boolean(values.hasSpeakers),
+        hasPowerOutlets: Boolean(values.hasPowerOutlets),
+        hasWifi: Boolean(values.hasWifi),
+        pcCount: Number(values.pcCount ?? 0),
+        equipmentCount: Number(values.equipmentCount ?? 0),
         description: values.description,
         availabilityWindows: values.availabilityWindows,
+        allowBookings: Boolean(values.allowBookings),
+        allowRequests: Boolean(values.allowRequests),
         ...(isEdit ? { status: values.status as ResourceStatus } : {}),
       };
 

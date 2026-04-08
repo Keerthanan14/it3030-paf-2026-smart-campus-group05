@@ -1,4 +1,5 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { ResourceForm } from '../../features/resources/components/ResourceForm';
 import { useResourceForm } from '../../features/resources/hooks/useResourceForm';
 
@@ -22,7 +23,11 @@ export default function AdminResourceFormPage() {
           <h1 className="text-2xl font-bold tracking-tight">{isEdit ? 'Edit Resource' : 'Create Resource'}</h1>
           <p className="mt-1 text-sm text-foreground/70">Configure resource details and weekly availability windows.</p>
         </div>
-        <Link to="/admin/resources" className="rounded-md border border-border/70 px-3 py-2 text-sm">
+        <Link
+          to="/admin/resources"
+          className="inline-flex items-center gap-2 rounded-md bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground hover:opacity-90"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Back to Resources
         </Link>
       </div>

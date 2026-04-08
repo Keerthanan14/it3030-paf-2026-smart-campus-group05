@@ -1,9 +1,19 @@
+import { useState } from 'react';
 import { ResourceFilters } from '../../features/resources/components/ResourceFilters';
+import { ResourceDetailCard } from '../../features/resources/components/ResourceDetailCard';
 import { ResourceTable } from '../../features/resources/components/ResourceTable';
 import { useAdminResources } from '../../features/resources/hooks/useAdminResources';
+import { resourceApi } from '../../core/api/resourceApi';
+import type { ResourceItem } from '../../types/resource';
 import { Link } from 'react-router-dom';
+import { Modal } from '../../shared/components/ui/Modal';
 
 export default function AdminResourcesPage() {
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [viewError, setViewError] = useState<string | null>(null);
+  const [selectedResource, setSelectedResource] = useState<ResourceItem | null>(null);
+
   const {
     resources,
     filters,
@@ -19,6 +29,28 @@ export default function AdminResourcesPage() {
     updateStatus,
     removeResource,
   } = useAdminResources();
+
+  const openViewModal = async (id: string) => {
+    setIsViewModalOpen(true);
+    setViewLoading(true);
+    setViewError(null);
+    setSelectedResource(null);
+    try {
+      const { data } = await resourceApi.getResourceById(id);
+      setSelectedResource(data);
+    } catch (err) {
+      setViewError(err instanceof Error ? err.message : 'Failed to load resource details');
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
+  const closeViewModal = () => {
+    setIsViewModalOpen(false);
+    setViewLoading(false);
+    setViewError(null);
+    setSelectedResource(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -45,6 +77,9 @@ export default function AdminResourcesPage() {
       <ResourceTable
         items={resources}
         loading={loading}
+        onView={(id) => {
+          void openViewModal(id);
+        }}
         onToggleStatus={(id, nextStatus) => {
           void updateStatus(id, nextStatus);
         }}
@@ -85,6 +120,12 @@ export default function AdminResourcesPage() {
           </button>
         </div>
       </div>
+
+      <Modal isOpen={isViewModalOpen} onClose={closeViewModal} className="max-w-3xl p-4 sm:p-6">
+        {viewLoading ? <div className="p-3 text-sm">Loading resource details...</div> : null}
+        {viewError ? <div className="rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700">{viewError}</div> : null}
+        {selectedResource ? <ResourceDetailCard resource={selectedResource} canManage /> : null}
+      </Modal>
     </div>
   );
 }
