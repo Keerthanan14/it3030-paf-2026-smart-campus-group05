@@ -15,12 +15,10 @@ import AdminTicketsPage from './pages/admin/AdminTicketsPage';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
 import StudentDashboardPage from './pages/student/StudentDashboardPage';
 import StudentBookingsPage from './pages/student/StudentBookingsPage';
-import ResourcesCatalogPage from './pages/resources/ResourcesCatalogPage';
-import ResourceDetailPage from './pages/resources/ResourceDetailPage';
-import ResourceCalendarPage from './pages/resources/ResourceCalendarPage';
+import StudentResourcesPage from './pages/student/StudentResourcesPage';
+import StudentNotificationsPage from './pages/student/StudentNotificationsPage';
 import TechnicianDashboardPage from './pages/technician/TechnicianDashboardPage';
 import TechnicianTicketsPage from './pages/technician/TechnicianTicketsPage';
-import StudentNotificationsPage from './pages/student/StudentNotificationsPage';
 import StudentSettingsPage from './pages/student/StudentSettingsPage';
 import StudentTicketsPage from './pages/student/StudentTicketsPage';
 import { AdminRoute, ProtectedRoute, StudentRoute, TechnicianRoute } from './routes/RouteGuards.tsx';
@@ -51,20 +49,15 @@ function App() {
               <Route path="/admin/resources" element={<AdminResourcesPage />} />
               <Route path="/admin/resources/new" element={<AdminResourcesPage />} />
               <Route path="/admin/resources/:id/edit" element={<AdminResourcesPage />} />
-              <Route path="/admin/resources/:id/view" element={<ResourceDetailPage />} />
-              <Route path="/admin/resources/:id/view/calendar" element={<ResourceCalendarPage />} />
-              <Route path="/admin/resources/browse" element={<ResourcesCatalogPage />} />
-              <Route path="/admin/resources/browse/:id" element={<ResourceDetailPage />} />
-              <Route path="/admin/resources/browse/:id/calendar" element={<ResourceCalendarPage />} />
+              <Route path="/admin/resources/:id/view" element={<AdminResourcesPage />} />
+              <Route path="/admin/resources/:id/view/calendar" element={<AdminResourcesPage />} />
               <Route path="/admin/bookings" element={<AdminBookingsPage />} />
               <Route path="/admin/tickets" element={<AdminTicketsPage />} />
             </Route>
 
             <Route element={<StudentRoute />}>
               <Route path="/student/dashboard" element={<StudentDashboardPage />} />
-              <Route path="/student/resources" element={<ResourcesCatalogPage />} />
-              <Route path="/student/resources/:id" element={<ResourceDetailPage />} />
-              <Route path="/student/resources/:id/calendar" element={<ResourceCalendarPage />} />
+              <Route path="/student/resources" element={<StudentResourcesPage />} />
               <Route path="/student/booking" element={<StudentBookingsPage />} />
               <Route path="/booking" element={<Navigate to="/student/booking" replace />} />
               <Route path="/student/notifications" element={<StudentNotificationsPage />} />
@@ -75,9 +68,6 @@ function App() {
 
             <Route element={<TechnicianRoute />}>
               <Route path="/technician/dashboard" element={<TechnicianDashboardPage />} />
-              <Route path="/technician/resources" element={<ResourcesCatalogPage />} />
-              <Route path="/technician/resources/:id" element={<ResourceDetailPage />} />
-              <Route path="/technician/resources/:id/calendar" element={<ResourceCalendarPage />} />
               <Route path="/technician/tickets" element={<TechnicianTicketsPage />} />
             </Route>
           </Route>

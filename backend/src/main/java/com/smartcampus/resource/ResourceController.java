@@ -1,7 +1,9 @@
 package com.smartcampus.resource;
 
+import com.smartcampus.audit.AuditLogService;
 import com.smartcampus.resource.dto.CreateResourceRequest;
 import com.smartcampus.resource.dto.PaginatedResourceResponse;
+import com.smartcampus.resource.dto.ResourceReportAuditRequest;
 import com.smartcampus.resource.dto.ResourceAvailabilityResponse;
 import com.smartcampus.resource.dto.ResourceResponse;
 import com.smartcampus.resource.dto.StatusUpdateRequest;
@@ -39,10 +41,15 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RequestMapping("/api/resources")
 public class ResourceController {
 
-    private final ResourceService resourceService;
+    private static final UUID RESOURCE_REPORT_ENTITY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
-    public ResourceController(ResourceService resourceService) {
+    private final ResourceService resourceService;
+    private final AuditLogService auditLogService;
+
+    public ResourceController(ResourceService resourceService,
+                              AuditLogService auditLogService) {
         this.resourceService = resourceService;
+        this.auditLogService = auditLogService;
     }
 
     @GetMapping
@@ -75,16 +82,53 @@ public class ResourceController {
                 .build()
                 .toUriString();
 
+        Map<String, Object> links = new HashMap<>();
+        links.put("self", Map.of("href", selfHref));
+        links.put("create", Map.of("href", linkTo(methodOn(ResourceController.class).createResource(null, null)).toUri().toString()));
+
+        String firstHref = uriBuilder
+            .replaceQueryParam("page", 0)
+            .replaceQueryParam("size", size)
+            .build()
+            .toUriString();
+        links.put("first", Map.of("href", firstHref));
+
+        int lastPage = Math.max(response.totalPages() - 1, 0);
+        String lastHref = uriBuilder
+            .replaceQueryParam("page", lastPage)
+            .replaceQueryParam("size", size)
+            .build()
+            .toUriString();
+        links.put("last", Map.of("href", lastHref));
+
+        if (page > 0) {
+            String prevHref = uriBuilder
+                .replaceQueryParam("page", page - 1)
+                .replaceQueryParam("size", size)
+                .build()
+                .toUriString();
+            links.put("prev", Map.of("href", prevHref));
+        }
+
+        if (page + 1 < response.totalPages()) {
+            String nextHref = uriBuilder
+                .replaceQueryParam("page", page + 1)
+                .replaceQueryParam("size", size)
+                .build()
+                .toUriString();
+            links.put("next", Map.of("href", nextHref));
+        }
+
+        links.put("report-audit", Map.of("href", linkTo(methodOn(ResourceController.class)
+            .auditResourceReportGeneration(null, null)).toUri().toString()));
+
         Map<String, Object> body = new HashMap<>();
         body.put("_embedded", Map.of("resources", resources));
         body.put("totalElements", response.totalElements());
         body.put("totalPages", response.totalPages());
         body.put("currentPage", response.currentPage());
         body.put("size", response.size());
-        body.put("_links", Map.of(
-                "self", Map.of("href", selfHref),
-                "create", Map.of("href", linkTo(methodOn(ResourceController.class).createResource(null)).toUri().toString())
-        ));
+        body.put("_links", links);
 
         return ResponseEntity.ok(body);
     }
@@ -94,26 +138,98 @@ public class ResourceController {
         return ResponseEntity.ok(toResourceModel(resourceService.getResourceById(id)));
     }
 
+    @PostMapping("/report/audit")
+    public ResponseEntity<Void> auditResourceReportGeneration(@Valid @RequestBody ResourceReportAuditRequest request,
+                                                              @AuthenticationPrincipal AuthUserPrincipal principal) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("format", request.format().toUpperCase());
+        payload.put("selectedColumnCount", request.selectedColumnCount());
+
+        auditLogService.logAction(
+                actorUserId(principal),
+                "REPORT_GENERATE",
+                "RESOURCE",
+                RESOURCE_REPORT_ENTITY_ID,
+                null,
+                payload
+        );
+
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping
-    public ResponseEntity<EntityModel<ResourceResponse>> createResource(@Valid @RequestBody CreateResourceRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(toResourceModel(resourceService.createResource(request)));
+    public ResponseEntity<EntityModel<ResourceResponse>> createResource(@Valid @RequestBody CreateResourceRequest request,
+                                                                        @AuthenticationPrincipal AuthUserPrincipal principal) {
+        ResourceResponse created = resourceService.createResource(request);
+
+        auditLogService.logAction(
+                actorUserId(principal),
+                "CREATE",
+                "RESOURCE",
+                created.id(),
+                null,
+                toAuditSnapshot(created)
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(toResourceModel(created));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<ResourceResponse>> updateResource(@PathVariable UUID id,
+                                                                        @AuthenticationPrincipal AuthUserPrincipal principal,
                                                                         @Valid @RequestBody UpdateResourceRequest request) {
-        return ResponseEntity.ok(toResourceModel(resourceService.updateResource(id, request)));
+        ResourceResponse before = resourceService.getResourceById(id);
+        ResourceResponse updated = resourceService.updateResource(id, request);
+
+        auditLogService.logAction(
+                actorUserId(principal),
+                "UPDATE",
+                "RESOURCE",
+                updated.id(),
+                toAuditSnapshot(before),
+                toAuditSnapshot(updated)
+        );
+
+        return ResponseEntity.ok(toResourceModel(updated));
     }
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<EntityModel<ResourceResponse>> updateResourceStatus(@PathVariable UUID id,
+                                                                              @AuthenticationPrincipal AuthUserPrincipal principal,
                                                                               @Valid @RequestBody StatusUpdateRequest request) {
-        return ResponseEntity.ok(toResourceModel(resourceService.updateResourceStatus(id, request.status())));
+        ResourceResponse before = resourceService.getResourceById(id);
+        ResourceResponse updated = resourceService.updateResourceStatus(id, request.status());
+
+        auditLogService.logAction(
+                actorUserId(principal),
+                "STATUS_CHANGE",
+                "RESOURCE",
+                updated.id(),
+                Map.of("status", before.status().name()),
+                Map.of("status", updated.status().name())
+        );
+
+        return ResponseEntity.ok(toResourceModel(updated));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteResource(@PathVariable UUID id) {
+    public ResponseEntity<Void> deleteResource(@PathVariable UUID id,
+                                               @AuthenticationPrincipal AuthUserPrincipal principal) {
+        ResourceResponse before = resourceService.getResourceById(id);
         resourceService.softDeleteResource(id);
+
+        Map<String, Object> newValue = new HashMap<>();
+        newValue.put("deleted", true);
+
+        auditLogService.logAction(
+                actorUserId(principal),
+                "DELETE",
+                "RESOURCE",
+                id,
+                toAuditSnapshot(before),
+                newValue
+        );
+
         return ResponseEntity.noContent().build();
     }
 
@@ -142,5 +258,23 @@ public class ResourceController {
         }
 
         return model;
+    }
+
+    private UUID actorUserId(AuthUserPrincipal principal) {
+        return principal == null ? null : principal.userId();
+    }
+
+    private Map<String, Object> toAuditSnapshot(ResourceResponse resource) {
+        Map<String, Object> snapshot = new HashMap<>();
+        snapshot.put("name", resource.name());
+        snapshot.put("type", resource.type() == null ? null : resource.type().name());
+        snapshot.put("status", resource.status() == null ? null : resource.status().name());
+        snapshot.put("capacity", resource.capacity());
+        snapshot.put("building", resource.building());
+        snapshot.put("floor", resource.floor());
+        snapshot.put("location", resource.location());
+        snapshot.put("allowBookings", resource.allowBookings());
+        snapshot.put("allowRequests", resource.allowRequests());
+        return snapshot;
     }
 }

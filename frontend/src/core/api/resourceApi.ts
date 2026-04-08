@@ -14,6 +14,11 @@ interface ListParams {
 	filters?: Partial<ResourceFilters>;
 }
 
+interface ReportAuditPayload {
+	format: 'csv' | 'pdf';
+	selectedColumnCount: number;
+}
+
 type MaybeHateoasModel<T> = T & { content?: T };
 
 function unwrapModel<T>(payload: MaybeHateoasModel<T>): T {
@@ -91,5 +96,9 @@ export const resourceApi = {
 
 	deleteResource(id: string) {
 		return api.delete(`/resources/${id}`);
+	},
+
+	logReportGeneration(payload: ReportAuditPayload) {
+		return api.post('/resources/report/audit', payload);
 	},
 };
