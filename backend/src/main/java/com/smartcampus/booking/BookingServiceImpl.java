@@ -553,8 +553,12 @@ public class BookingServiceImpl implements BookingService {
             return;
         }
 
-        String dayName = bookingDate.getDayOfWeek().name().toLowerCase(Locale.ROOT);
-        AvailabilityWindow window = windows.get(dayName);
+        String dayNameLower = bookingDate.getDayOfWeek().name().toLowerCase(Locale.ROOT);
+        String dayNameUpper = bookingDate.getDayOfWeek().name();
+        AvailabilityWindow window = windows.get(dayNameLower);
+        if (window == null) {
+            window = windows.get(dayNameUpper);
+        }
         if (window == null) {
             throw new BookingBadRequestException("Requested time is outside resource availability windows");
         }

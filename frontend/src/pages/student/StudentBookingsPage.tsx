@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
 import { Input } from '../../shared/components/ui/Input';
+import { Modal } from '../../shared/components/ui/Modal';
 import { StickyPageHeader } from '../../shared/components/ui/StickyPageHeader';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../shared/components/ui/Table';
 import { useToast } from '../../shared/components/ui/useToast';
 import { useBookingStore } from '../../core/store/bookingStore';
 import type { BookingApiError, BookingItem, BookingStatus, CreateBookingRequest } from '../../types/booking';
+import type { ResourceItem } from '../../types/resource';
+import { resourceApi } from '../../core/api/resourceApi';
 import { useSearchParams } from 'react-router-dom';
 
 const badgeTone: Record<BookingStatus, string> = {
@@ -29,6 +32,8 @@ const toErrorMessage = (error: BookingApiError | null, fallback: string): string
 };
 
 const nowDate = (): string => new Date().toISOString().slice(0, 10);
+
+const formatResourceType = (type: string): string => type.replace(/_/g, ' ');
 
 const canCancelBooking = (booking: BookingItem): boolean => {
   if (booking._links) {
@@ -69,32 +74,117 @@ export default function StudentBookingsPage() {
   } = useBookingStore();
 
   const [resourceId, setResourceId] = useState(() => prefilledResourceId ?? '');
+  const [resourceQuery, setResourceQuery] = useState(() => prefilledResourceId ?? '');
+  const [resources, setResources] = useState<ResourceItem[]>([]);
+  const [isResourcesLoading, setIsResourcesLoading] = useState(false);
+  const [isResourceDropdownOpen, setIsResourceDropdownOpen] = useState(false);
+  const resourcePickerRef = useRef<HTMLDivElement | null>(null);
   const [bookingDate, setBookingDate] = useState(() => prefilledDate ?? nowDate());
   const [startTime, setStartTime] = useState(() => prefilledStartTime ?? '09:00');
   const [endTime, setEndTime] = useState(() => prefilledEndTime ?? '10:00');
   const [purpose, setPurpose] = useState('');
   const [attendeesCount, setAttendeesCount] = useState('1');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     void fetchBookings();
   }, [fetchBookings, page, size, filters]);
 
+  useEffect(() => {
+    if (prefilledResourceId) {
+      setIsCreateModalOpen(true);
+    }
+  }, [prefilledResourceId]);
+
+  useEffect(() => {
+    const loadResources = async () => {
+      setIsResourcesLoading(true);
+      try {
+        const response = await resourceApi.listResources({
+          page: 0,
+          size: 200,
+          filters: { status: 'ACTIVE', allowBookings: true },
+        });
+        const loadedResources = response.data.content ?? [];
+        setResources(loadedResources);
+
+        if (prefilledResourceId) {
+          const prefilled = loadedResources.find((item) => item.id === prefilledResourceId);
+          if (prefilled) {
+            setResourceQuery(`${prefilled.name} ${formatResourceType(prefilled.type)}`);
+          }
+        }
+      } finally {
+        setIsResourcesLoading(false);
+      }
+    };
+
+    void loadResources();
+  }, [prefilledResourceId]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (!resourcePickerRef.current?.contains(target)) {
+        setIsResourceDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, []);
+
+  const filteredResources = useMemo(() => {
+    const term = resourceQuery.trim().toLowerCase();
+    if (!term) {
+      return resources.slice(0, 8);
+    }
+
+    return resources
+      .filter((item) => {
+        const normalizedType = formatResourceType(item.type).toLowerCase();
+        return (
+          item.name.toLowerCase().includes(term) ||
+          item.type.toLowerCase().includes(term) ||
+          normalizedType.includes(term) ||
+          item.location.toLowerCase().includes(term) ||
+          item.id.toLowerCase().includes(term)
+        );
+      })
+      .slice(0, 8);
+  }, [resources, resourceQuery]);
+
+  const selectedResource = useMemo(() => {
+    return resources.find((item) => item.id === resourceId) ?? null;
+  }, [resources, resourceId]);
+
   const canSubmit = useMemo(() => {
+    const attendees = Number(attendeesCount);
+    const isWithinCapacity = selectedResource ? attendees <= selectedResource.capacity : true;
+
     return (
       resourceId.trim().length > 10 &&
       bookingDate.length > 0 &&
       startTime.length > 0 &&
       endTime.length > 0 &&
       purpose.trim().length >= 5 &&
-      Number(attendeesCount) >= 1
+      attendees >= 1 &&
+      isWithinCapacity
     );
-  }, [resourceId, bookingDate, startTime, endTime, purpose, attendeesCount]);
+  }, [resourceId, bookingDate, startTime, endTime, purpose, attendeesCount, selectedResource]);
 
   const refreshList = async (): Promise<void> => {
     await fetchBookings();
   };
 
   const onCreateBooking = async (): Promise<void> => {
+    if (selectedResource && Number(attendeesCount) > selectedResource.capacity) {
+      toast.warning('Capacity exceeded', `Attendees cannot exceed resource capacity (${selectedResource.capacity}).`);
+      return;
+    }
+
     if (!canSubmit) {
       toast.warning('Missing details', 'Please complete all required booking fields.');
       return;
@@ -114,6 +204,7 @@ export default function StudentBookingsPage() {
       toast.success('Booking created', `Request for ${created.resourceName} has been submitted.`);
       setPurpose('');
       setAttendeesCount('1');
+      setIsCreateModalOpen(false);
       await refreshList();
     } catch (caught: unknown) {
       const apiError = (caught as BookingApiError) || error;
@@ -150,49 +241,108 @@ export default function StudentBookingsPage() {
       <StickyPageHeader
         title="My Bookings"
         description="Create and manage your booking requests with live status updates."
+        action={
+          <Button type="button" onClick={() => setIsCreateModalOpen(true)}>
+            New Booking
+          </Button>
+        }
       />
 
-      <Card className="space-y-4 p-5">
-        <h2 className="text-lg font-semibold">Create Booking Request</h2>
-        <div className="grid gap-3 md:grid-cols-2">
-          <Input label="Resource ID" value={resourceId} onChange={(e) => setResourceId(e.target.value)} placeholder="Paste resource UUID" />
-          <Input
-            type="number"
-            min={1}
-            label="Attendees"
-            value={attendeesCount}
-            onChange={(e) => setAttendeesCount(e.target.value)}
-            placeholder="1"
-          />
-        </div>
-        {prefilledResourceId ? (
-          <p className="text-xs text-foreground/70">Resource and slot details were prefilled from the selected resource calendar.</p>
-        ) : null}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Create Booking Request"
+        className="max-w-3xl"
+      >
+        <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="relative" ref={resourcePickerRef}>
+              <Input
+                label="Resource"
+                value={resourceQuery}
+                onChange={(e) => {
+                  const nextQuery = e.target.value;
+                  setResourceQuery(nextQuery);
+                  setIsResourceDropdownOpen(true);
 
-        <div className="grid gap-3 md:grid-cols-3">
-          <Input type="date" label="Booking Date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} />
-          <Input type="time" label="Start Time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-          <Input type="time" label="End Time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-        </div>
+                  const matched = resources.find((item) => item.id === nextQuery);
+                  setResourceId(matched?.id ?? '');
+                }}
+                onFocus={() => setIsResourceDropdownOpen(true)}
+                onClick={() => setIsResourceDropdownOpen(true)}
+                placeholder="Search by name, type, location, or ID"
+                helperText={resourceId ? `Selected ID: ${resourceId}` : 'Type to search, then pick a resource below.'}
+              />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium">Purpose</label>
-          <textarea
-            className="min-h-24 w-full rounded-md border border-border/70 bg-background px-3 py-2 text-sm"
-            value={purpose}
-            onChange={(e) => setPurpose(e.target.value)}
-            placeholder="Describe why this resource is needed"
-          />
-        </div>
+              {isResourceDropdownOpen ? (
+                <div className="absolute z-20 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border/70 bg-background shadow-lg">
+                  {isResourcesLoading ? (
+                    <p className="px-3 py-2 text-sm text-foreground/70">Loading resources...</p>
+                  ) : filteredResources.length === 0 ? (
+                    <p className="px-3 py-2 text-sm text-foreground/70">No matching resources.</p>
+                  ) : (
+                    filteredResources.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className="block w-full border-b border-border/40 px-3 py-2 text-left text-sm hover:bg-muted/60"
+                        onClick={() => {
+                          setResourceId(item.id);
+                          setResourceQuery(`${item.name} ${formatResourceType(item.type)}`);
+                          setIsResourceDropdownOpen(false);
+                        }}
+                      >
+                        <span className="font-medium">{item.name} {formatResourceType(item.type)}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              ) : null}
+            </div>
+            <Input
+              type="number"
+              min={1}
+              max={selectedResource?.capacity}
+              label="Attendees"
+              value={attendeesCount}
+              onChange={(e) => setAttendeesCount(e.target.value)}
+              placeholder="1"
+              helperText={selectedResource ? `Maximum attendees: ${selectedResource.capacity}` : 'Select a resource to see capacity limit.'}
+            />
+          </div>
 
-        {error ? <p className="text-sm text-rose-600">{toErrorMessage(error, 'Please check your request and try again.')}</p> : null}
+          {prefilledResourceId ? (
+            <p className="text-xs text-foreground/70">Resource and slot details were prefilled from the selected resource calendar.</p>
+          ) : null}
 
-        <div className="flex justify-end">
-          <Button type="button" onClick={() => void onCreateBooking()} isLoading={isMutating} disabled={!canSubmit}>
-            Submit Booking
-          </Button>
+          <div className="grid gap-3 md:grid-cols-3">
+            <Input type="date" label="Booking Date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} />
+            <Input type="time" label="Start Time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+            <Input type="time" label="End Time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Purpose</label>
+            <textarea
+              className="min-h-24 w-full rounded-md border border-border/70 bg-background px-3 py-2 text-sm"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              placeholder="Describe why this resource is needed"
+            />
+          </div>
+
+          {error ? <p className="text-sm text-rose-600">{toErrorMessage(error, 'Please check your request and try again.')}</p> : null}
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={() => void onCreateBooking()} isLoading={isMutating} disabled={!canSubmit}>
+              Submit Booking
+            </Button>
+          </div>
         </div>
-      </Card>
+      </Modal>
 
       <Card className="space-y-4 p-5">
         <div className="flex flex-wrap items-end gap-3">
