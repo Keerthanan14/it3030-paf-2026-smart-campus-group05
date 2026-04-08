@@ -7,6 +7,7 @@ import { formatRelativeTime } from '../../../core/utils/formatDate';
 import { resolveNotificationTarget } from '../../../core/utils/notificationRoutes';
 import { Button } from '../../../shared/components/ui/Button';
 import { Card } from '../../../shared/components/ui/Card';
+import { StickyPageHeader } from '../../../shared/components/ui/StickyPageHeader';
 import { useAuthStore } from '../../../core/store/authStore';
 import type { NotificationItem } from '../../../types/notification';
 import clsx from 'clsx';
@@ -85,16 +86,16 @@ export function NotificationInbox({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
-          <p className="mt-1 text-sm text-foreground/70">{description}</p>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-foreground/70">
-          <span className="rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">{unreadCount} unread</span>
-          <span className="rounded-full bg-muted px-3 py-1 font-medium">{totalElements} total</span>
-        </div>
-      </div>
+      <StickyPageHeader
+        title={title}
+        description={description}
+        meta={
+          <div className="flex items-center gap-2 text-sm text-foreground/70">
+            <span className="rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">{unreadCount} unread</span>
+            <span className="rounded-full bg-muted px-3 py-1 font-medium">{totalElements} total</span>
+          </div>
+        }
+      />
 
       <div className="flex items-center justify-between gap-3">
         <Button type="button" variant="outline" onClick={handleMarkAllRead} className="gap-2">

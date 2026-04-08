@@ -11,7 +11,6 @@ import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminNotificationsPage from './pages/admin/AdminNotificationsPage';
 import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import AdminResourcesPage from './pages/admin/AdminResourcesPage';
-import AdminResourceFormPage from './pages/admin/AdminResourceFormPage';
 import AdminTicketsPage from './pages/admin/AdminTicketsPage';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
 import StudentDashboardPage from './pages/student/StudentDashboardPage';
@@ -50,8 +49,8 @@ function App() {
               <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
               <Route path="/admin/settings" element={<AdminSettingsPage />} />
               <Route path="/admin/resources" element={<AdminResourcesPage />} />
-              <Route path="/admin/resources/new" element={<AdminResourceFormPage />} />
-              <Route path="/admin/resources/:id/edit" element={<AdminResourceFormPage />} />
+              <Route path="/admin/resources/new" element={<AdminResourcesPage />} />
+              <Route path="/admin/resources/:id/edit" element={<AdminResourcesPage />} />
               <Route path="/admin/resources/:id/view" element={<ResourceDetailPage />} />
               <Route path="/admin/resources/:id/view/calendar" element={<ResourceCalendarPage />} />
               <Route path="/admin/resources/browse" element={<ResourcesCatalogPage />} />

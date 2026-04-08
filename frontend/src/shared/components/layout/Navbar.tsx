@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { UserCircle } from 'lucide-react';
+import { LogOut, UserCircle } from 'lucide-react';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import type { AuthUser } from '../../../types/auth';
 import { NotificationBell } from '../../../features/notification/components/NotificationBell';
@@ -7,9 +7,10 @@ import { NotificationBell } from '../../../features/notification/components/Noti
 interface NavbarProps {
   user: AuthUser | null;
   activeRole: string;
+  onLogout: () => void;
 }
 
-export function Navbar({ user, activeRole }: NavbarProps) {
+export function Navbar({ user, activeRole, onLogout }: NavbarProps) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -102,6 +103,16 @@ export function Navbar({ user, activeRole }: NavbarProps) {
               </div>
             )}
           </div>
+
+          <button
+            type="button"
+            onClick={onLogout}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border/70 text-foreground/70 hover:bg-primary/10 hover:text-primary"
+            aria-label="Log out"
+            title="Log out"
+          >
+            <LogOut className="h-5 w-5" aria-hidden="true" />
+          </button>
         </div>
       </div>
     </div>

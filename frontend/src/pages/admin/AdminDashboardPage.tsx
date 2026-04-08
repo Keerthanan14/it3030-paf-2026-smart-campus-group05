@@ -1,5 +1,6 @@
 import { Building2, CalendarClock, Ticket, Users } from 'lucide-react';
 import { Card } from '../../shared/components/ui/Card';
+import { StickyPageHeader } from '../../shared/components/ui/StickyPageHeader';
 
 const stats = [
   { label: 'Total Resources', value: '48', icon: Building2 },
@@ -11,11 +12,10 @@ const stats = [
 export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="mt-1 text-sm text-foreground/70">Monitor campus operations, approvals, and support flow in one place.</p>
-        <hr className="mt-4 -mx-4 border-border/70 sm:-mx-6 lg:-mx-8" />
-      </div>
+      <StickyPageHeader
+        title="Admin Dashboard"
+        description="Monitor campus operations, approvals, and support flow in one place."
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((item) => (

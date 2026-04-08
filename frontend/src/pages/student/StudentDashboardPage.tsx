@@ -1,5 +1,6 @@
 import { CalendarCheck, Clock3, Ticket, CheckCircle2 } from 'lucide-react';
 import { Card } from '../../shared/components/ui/Card';
+import { StickyPageHeader } from '../../shared/components/ui/StickyPageHeader';
 
 const stats = [
   { label: 'Upcoming Bookings', value: '3', icon: CalendarCheck },
@@ -11,11 +12,10 @@ const stats = [
 export default function StudentDashboardPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Student Dashboard</h1>
-        <p className="mt-1 text-sm text-foreground/70">Track your bookings and support requests from one clean workspace.</p>
-        <hr className="mt-4 -mx-4 border-border/70 sm:-mx-6 lg:-mx-8" />
-      </div>
+      <StickyPageHeader
+        title="Student Dashboard"
+        description="Track your bookings and support requests from one clean workspace."
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((item) => (

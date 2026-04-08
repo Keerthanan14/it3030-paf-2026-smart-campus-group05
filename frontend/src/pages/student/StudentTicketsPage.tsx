@@ -1,4 +1,5 @@
 import { Card } from "../../shared/components/ui/Card";
+import { StickyPageHeader } from "../../shared/components/ui/StickyPageHeader";
 import StudentTicketCreateForm from "../../features/ticket/components/StudentTicketCreateForm";
 import StudentTicketDetail from "../../features/ticket/components/StudentTicketDetail";
 import StudentTicketFilters from "../../features/ticket/components/StudentTicketFilters";
@@ -10,11 +11,10 @@ export default function StudentTicketsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">My Tickets</h1>
-        <p className="mt-1 text-sm text-foreground/70">Monitor your support requests and their latest status updates.</p>
-        <hr className="mt-4 -mx-4 border-border/70 sm:-mx-6 lg:-mx-8" />
-      </div>
+      <StickyPageHeader
+        title="My Tickets"
+        description="Monitor your support requests and their latest status updates."
+      />
 
       <Card className="space-y-4 p-5">
         <StudentTicketCreateForm

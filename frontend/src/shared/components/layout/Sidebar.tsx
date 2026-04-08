@@ -1,5 +1,5 @@
-import { NavLink } from 'react-router-dom';
-import { LogOut, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -13,15 +13,29 @@ interface SidebarProps {
   navigation: NavigationItem[];
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
-  onLogout: () => void;
 }
 
 export function Sidebar({
   navigation,
   isSidebarOpen,
   onToggleSidebar,
-  onLogout,
 }: SidebarProps) {
+  const location = useLocation();
+
+  const isItemActive = (href: string) => {
+    const path = location.pathname;
+
+    if (href === '/admin/resources/browse') {
+      return path.startsWith('/admin/resources/browse');
+    }
+
+    if (href === '/admin/resources') {
+      return path === '/admin/resources' || path === '/admin/resources/new' || /^\/admin\/resources\/[^/]+\/edit$/.test(path);
+    }
+
+    return path === href || path.startsWith(`${href}/`);
+  };
+
   return (
     <div
       className={clsx(
@@ -55,9 +69,12 @@ export function Sidebar({
               <ul role="list" className={clsx('space-y-1', isSidebarOpen ? 'mx-0' : 'mx-auto w-full')}>
                 {navigation.map((item) => (
                   <li key={item.name}>
+                    {(() => {
+                      const isActive = isItemActive(item.href);
+                      return (
                     <NavLink
                       to={item.href}
-                      className={({ isActive }) =>
+                      className={
                         clsx(
                           isActive
                             ? 'bg-primary text-primary-foreground'
@@ -68,37 +85,24 @@ export function Sidebar({
                       }
                       title={item.name}
                     >
-                      {({ isActive }) => (
-                        <>
-                          <item.icon
-                            className={clsx(
-                              isActive ? 'text-primary-foreground' : 'text-foreground/70 group-hover:text-primary',
-                              'h-6 w-6 shrink-0'
-                            )}
-                            aria-hidden="true"
-                          />
-                          {isSidebarOpen && item.name}
-                        </>
-                      )}
+                      <>
+                        <item.icon
+                          className={clsx(
+                            isActive ? 'text-primary-foreground' : 'text-foreground/70 group-hover:text-primary',
+                            'h-6 w-6 shrink-0'
+                          )}
+                          aria-hidden="true"
+                        />
+                        {isSidebarOpen && item.name}
+                      </>
                     </NavLink>
+                      );
+                    })()}
                   </li>
                 ))}
               </ul>
             </li>
 
-            <li className="mt-auto">
-              <button
-                onClick={onLogout}
-                className={clsx(
-                  'group w-full rounded-md p-2 text-sm font-semibold leading-6 text-foreground/75 hover:bg-primary/10 hover:text-primary transition-colors',
-                  isSidebarOpen ? 'flex gap-x-3' : 'flex justify-center'
-                )}
-                title="Log out"
-              >
-                <LogOut className="h-6 w-6 shrink-0 text-foreground/70 group-hover:text-primary" aria-hidden="true" />
-                {isSidebarOpen && 'Log out'}
-              </button>
-            </li>
           </ul>
         </nav>
       </div>

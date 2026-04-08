@@ -1,18 +1,35 @@
-import { useState } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { ResourceFilters } from '../../features/resources/components/ResourceFilters';
 import { ResourceDetailCard } from '../../features/resources/components/ResourceDetailCard';
+import { ResourceForm } from '../../features/resources/components/ResourceForm';
 import { ResourceTable } from '../../features/resources/components/ResourceTable';
+import { ResourcePagination } from '../../features/resources/components/ResourcePagination';
+import { ResourcePageShell } from '../../features/resources/components/ResourcePageShell';
 import { useAdminResources } from '../../features/resources/hooks/useAdminResources';
-import { resourceApi } from '../../core/api/resourceApi';
-import type { ResourceItem } from '../../types/resource';
-import { Link } from 'react-router-dom';
+import { useResourceForm } from '../../features/resources/hooks/useResourceForm';
+import { useResourceDetailModal } from '../../features/resources/hooks/useResourceDetailModal';
 import { Modal } from '../../shared/components/ui/Modal';
 
 export default function AdminResourcesPage() {
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [viewLoading, setViewLoading] = useState(false);
-  const [viewError, setViewError] = useState<string | null>(null);
-  const [selectedResource, setSelectedResource] = useState<ResourceItem | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const isFormRoute = location.pathname === '/admin/resources/new' || location.pathname.endsWith('/edit');
+
+  const { isOpen, loading: viewLoading, error: viewError, resource: selectedResource, open: openViewModal, close: closeViewModal } = useResourceDetailModal();
+
+  const {
+    values,
+    loading: formLoading,
+    saving,
+    error: formError,
+    isEdit,
+    days,
+    setField,
+    setWindowField,
+    save,
+  } = useResourceForm(isFormRoute ? id : undefined);
 
   const {
     resources,
@@ -28,48 +45,61 @@ export default function AdminResourcesPage() {
     applyFilters,
     updateStatus,
     removeResource,
-  } = useAdminResources();
+  } = useAdminResources({ enabled: !isFormRoute });
 
-  const openViewModal = async (id: string) => {
-    setIsViewModalOpen(true);
-    setViewLoading(true);
-    setViewError(null);
-    setSelectedResource(null);
-    try {
-      const { data } = await resourceApi.getResourceById(id);
-      setSelectedResource(data);
-    } catch (err) {
-      setViewError(err instanceof Error ? err.message : 'Failed to load resource details');
-    } finally {
-      setViewLoading(false);
+  const handleFormSubmit = async () => {
+    const success = await save();
+    if (success) {
+      navigate('/admin/resources');
     }
   };
 
-  const closeViewModal = () => {
-    setIsViewModalOpen(false);
-    setViewLoading(false);
-    setViewError(null);
-    setSelectedResource(null);
-  };
+  if (isFormRoute) {
+    return (
+      <ResourcePageShell
+        title={isEdit ? 'Edit Resource' : 'Create Resource'}
+        description="Configure resource details and weekly availability windows."
+        action={
+          <Link
+            to="/admin/resources"
+            className="inline-flex items-center gap-2 rounded-md bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground hover:opacity-90"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Back to Resources
+          </Link>
+        }
+      >
+        {formLoading ? (
+          <div className="rounded-lg border border-border/60 bg-card p-4 text-sm">Loading resource...</div>
+        ) : (
+          <ResourceForm
+            values={values}
+            days={days}
+            isEdit={isEdit}
+            saving={saving}
+            error={formError}
+            onFieldChange={setField}
+            onWindowChange={setWindowField}
+            onSubmit={handleFormSubmit}
+          />
+        )}
+      </ResourcePageShell>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Resource Management</h1>
-            <p className="mt-1 text-sm text-foreground/70">Manage campus resources, availability, and scheduling rules.</p>
-          </div>
-          <Link
-            to="/admin/resources/new"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-          >
-            Add Resource
-          </Link>
-        </div>
-        <hr className="mt-4 -mx-4 border-border/70 sm:-mx-6 lg:-mx-8" />
-      </div>
-
+    <ResourcePageShell
+      title="Resource Management"
+      description="Manage campus resources, availability, and scheduling rules."
+      action={
+        <Link
+          to="/admin/resources/new"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+        >
+          Add Resource
+        </Link>
+      }
+    >
       <ResourceFilters initialFilters={filters} onApply={applyFilters} />
 
       {error ? <div className="rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700">{error}</div> : null}
@@ -88,44 +118,21 @@ export default function AdminResourcesPage() {
         }}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-card p-4">
-        <p className="text-sm text-foreground/70">
-          Showing page {page + 1} of {Math.max(totalPages, 1)} ({totalElements} total resources)
-        </p>
-        <div className="flex items-center gap-2">
-          <select
-            className="h-9 rounded-md border border-border/70 bg-background px-2 text-sm"
-            value={size}
-            onChange={(e) => setPageSize(Number(e.target.value))}
-          >
-            <option value={5}>5 / page</option>
-            <option value={10}>10 / page</option>
-            <option value={20}>20 / page</option>
-          </select>
-          <button
-            type="button"
-            className="rounded-md border border-border/70 px-3 py-1.5 text-sm disabled:opacity-40"
-            onClick={() => setPage(Math.max(0, page - 1))}
-            disabled={page <= 0 || loading}
-          >
-            Previous
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-border/70 px-3 py-1.5 text-sm disabled:opacity-40"
-            onClick={() => setPage(page + 1)}
-            disabled={loading || totalPages === 0 || page >= totalPages - 1}
-          >
-            Next
-          </button>
-        </div>
-      </div>
+      <ResourcePagination
+        page={page}
+        size={size}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        loading={loading}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
 
-      <Modal isOpen={isViewModalOpen} onClose={closeViewModal} className="max-w-3xl p-4 sm:p-6">
+      <Modal isOpen={isOpen} onClose={closeViewModal} className="max-w-3xl p-4 sm:p-6">
         {viewLoading ? <div className="p-3 text-sm">Loading resource details...</div> : null}
         {viewError ? <div className="rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700">{viewError}</div> : null}
         {selectedResource ? <ResourceDetailCard resource={selectedResource} canManage /> : null}
       </Modal>
-    </div>
+    </ResourcePageShell>
   );
 }

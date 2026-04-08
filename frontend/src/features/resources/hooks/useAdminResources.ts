@@ -7,7 +7,11 @@ const defaultFilters: ResourceFilters = {
   location: '',
 };
 
-export function useAdminResources() {
+interface UseAdminResourcesOptions {
+  enabled?: boolean;
+}
+
+export function useAdminResources({ enabled = true }: UseAdminResourcesOptions = {}) {
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [filters, setFilters] = useState<ResourceFilters>(defaultFilters);
   const [page, setPage] = useState(0);
@@ -35,8 +39,12 @@ export function useAdminResources() {
   }, [filters, page, size]);
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     void fetchResources();
-  }, [fetchResources]);
+  }, [enabled, fetchResources]);
 
   const applyFilters = useCallback((nextFilters: ResourceFilters) => {
     setPage(0);

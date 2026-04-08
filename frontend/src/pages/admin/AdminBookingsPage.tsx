@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
 import { Input } from '../../shared/components/ui/Input';
+import { StickyPageHeader } from '../../shared/components/ui/StickyPageHeader';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../shared/components/ui/Table';
 import { useToast } from '../../shared/components/ui/useToast';
 import { useBookingStore } from '../../core/store/bookingStore';
@@ -156,11 +157,10 @@ export default function AdminBookingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Booking Management</h1>
-        <p className="mt-1 text-sm text-foreground/70">Review pending bookings, then approve or reject with a clear reason.</p>
-        <hr className="mt-4 -mx-4 border-border/70 sm:-mx-6 lg:-mx-8" />
-      </div>
+      <StickyPageHeader
+        title="Booking Management"
+        description="Review pending bookings, then approve or reject with a clear reason."
+      />
 
       <Card className="space-y-4 p-5">
         <div className="grid gap-3 md:grid-cols-4">

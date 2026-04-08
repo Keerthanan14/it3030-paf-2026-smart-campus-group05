@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
 import { Input } from '../../shared/components/ui/Input';
+import { StickyPageHeader } from '../../shared/components/ui/StickyPageHeader';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../shared/components/ui/Table';
 import { useToast } from '../../shared/components/ui/useToast';
 import { useBookingStore } from '../../core/store/bookingStore';
@@ -146,11 +147,10 @@ export default function StudentBookingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">My Bookings</h1>
-        <p className="mt-1 text-sm text-foreground/70">Create and manage your booking requests with live status updates.</p>
-        <hr className="mt-4 -mx-4 border-border/70 sm:-mx-6 lg:-mx-8" />
-      </div>
+      <StickyPageHeader
+        title="My Bookings"
+        description="Create and manage your booking requests with live status updates."
+      />
 
       <Card className="space-y-4 p-5">
         <h2 className="text-lg font-semibold">Create Booking Request</h2>

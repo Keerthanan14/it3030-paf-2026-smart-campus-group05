@@ -64,19 +64,18 @@ export function MainLayout() {
   const navigation = getNavigation(activeRole);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar user={user} activeRole={activeRole} />
+    <div className="h-screen overflow-hidden bg-background">
+      <Navbar user={user} activeRole={activeRole} onLogout={handleLogout} />
 
-      <div className="flex pt-16">
+      <div className="flex h-full pt-16">
         <Sidebar
           navigation={navigation}
           isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
-          onLogout={handleLogout}
         />
 
-      <div className={clsx('flex flex-col flex-1 transition-[padding-left] duration-200 overflow-y-auto scrollbar-hide', isSidebarOpen ? 'lg:pl-72' : 'lg:pl-20')}>
-        <main className="py-2 flex-1">
+      <div className={clsx('flex h-full flex-col flex-1 overflow-y-auto transition-[padding-left] duration-200 scrollbar-hide', isSidebarOpen ? 'lg:pl-72' : 'lg:pl-20')}>
+        <main className="flex-1">
           <div key={location.pathname} className="px-4 sm:px-6 lg:px-8 text-foreground">
             <Outlet />
           </div>
