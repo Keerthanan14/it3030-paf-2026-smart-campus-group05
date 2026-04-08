@@ -41,9 +41,10 @@ export const resourceApi = {
 				size,
 				keyword: filters.keyword || undefined,
 				location: filters.location || undefined,
-				capacity: filters.capacity || undefined,
 				type: filters.type || undefined,
 				status: filters.status || undefined,
+				allowBookings: filters.allowBookings || undefined,
+				allowRequests: filters.allowRequests || undefined,
 			},
 		});
 

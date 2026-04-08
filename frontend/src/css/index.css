@@ -160,15 +160,15 @@
 }
 .dark .brand-gradient {
   background: linear-gradient(to bottom right, #1e1b4b, #6d28d9);
-  
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+}
 
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 .fc .fc-non-business {

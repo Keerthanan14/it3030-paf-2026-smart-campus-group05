@@ -72,7 +72,7 @@ export function MainLayout() {
           onLogout={handleLogout}
         />
 
-      <div className={clsx('flex flex-col flex-1 transition-[padding-left] duration-200', isSidebarOpen ? 'lg:pl-72' : 'lg:pl-20')}>
+      <div className={clsx('flex flex-col flex-1 transition-[padding-left] duration-200 overflow-y-auto scrollbar-hide', isSidebarOpen ? 'lg:pl-72' : 'lg:pl-20')}>
         <main className="py-2 flex-1">
           <div key={location.pathname} className="px-4 sm:px-6 lg:px-8 text-foreground">
             <Outlet />

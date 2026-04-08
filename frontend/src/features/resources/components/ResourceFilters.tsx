@@ -9,21 +9,38 @@ interface ResourceFiltersProps {
 export function ResourceFilters({ initialFilters, onApply }: ResourceFiltersProps) {
   const [keyword, setKeyword] = useState(initialFilters.keyword);
   const [location, setLocation] = useState(initialFilters.location);
-  const [capacity, setCapacity] = useState<string>(initialFilters.capacity?.toString() ?? '');
   const [type, setType] = useState<ResourceType | ''>(initialFilters.type ?? '');
   const [status, setStatus] = useState<ResourceStatus | ''>(initialFilters.status ?? '');
+  const [allowBookings, setAllowBookings] = useState(Boolean(initialFilters.allowBookings));
+  const [allowRequests, setAllowRequests] = useState(Boolean(initialFilters.allowRequests));
 
   useEffect(() => {
     setKeyword(initialFilters.keyword);
     setLocation(initialFilters.location);
-    setCapacity(initialFilters.capacity?.toString() ?? '');
     setType(initialFilters.type ?? '');
     setStatus(initialFilters.status ?? '');
+    setAllowBookings(Boolean(initialFilters.allowBookings));
+    setAllowRequests(Boolean(initialFilters.allowRequests));
   }, [initialFilters]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      onApply({
+        keyword,
+        location,
+        type: type || undefined,
+        status: status || undefined,
+        allowBookings: allowBookings ? true : undefined,
+        allowRequests: allowRequests ? true : undefined,
+      });
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [keyword, location, type, status, allowBookings, allowRequests, onApply]);
 
   return (
     <div className="rounded-lg border border-border/60 bg-card p-4">
-      <div className="grid gap-3 md:grid-cols-5">
+      <div className="grid gap-3 lg:grid-cols-[minmax(280px,1.8fr)_minmax(180px,1fr)_minmax(180px,0.9fr)_max-content_max-content_max-content] lg:items-center">
         <input
           className="h-10 rounded-md border border-border/70 bg-background px-3 text-sm"
           placeholder="Search by name or description"
@@ -38,68 +55,59 @@ export function ResourceFilters({ initialFilters, onApply }: ResourceFiltersProp
           onChange={(e) => setLocation(e.target.value)}
         />
 
-        <input
-          type="number"
-          min={1}
-          className="h-10 rounded-md border border-border/70 bg-background px-3 text-sm"
-          placeholder="Min capacity"
-          value={capacity}
-          onChange={(e) => setCapacity(e.target.value)}
-        />
-
         <select
           className="h-10 rounded-md border border-border/70 bg-background px-3 text-sm"
           value={type}
           onChange={(e) => setType(e.target.value as ResourceType | '')}
         >
           <option value="">All types</option>
-          <option value="ROOM">ROOM</option>
+          <option value="LECTURE_HALL">LECTURE HALL</option>
           <option value="LAB">LAB</option>
+          <option value="MEETING_ROOM">MEETING ROOM</option>
+          <option value="BOARD_ROOM">BOARD ROOM</option>
+          <option value="STAFF_ROOM">STAFF ROOM</option>
+          <option value="SMART_CLASSROOM">SMART CLASSROOM</option>
           <option value="EQUIPMENT">EQUIPMENT</option>
+          <option value="STUDY_AREA">STUDY AREA</option>
+          <option value="LIBRARY">LIBRARY</option>
+          <option value="OTHER">OTHER</option>
         </select>
 
-        <select
-          className="h-10 rounded-md border border-border/70 bg-background px-3 text-sm"
-          value={status}
-          onChange={(e) => setStatus(e.target.value as ResourceStatus | '')}
-        >
-          <option value="">All statuses</option>
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="OUT_OF_SERVICE">OUT_OF_SERVICE</option>
-        </select>
+        <div className="flex items-center gap-3 text-sm whitespace-nowrap min-w-0">
+          <span className="font-medium">Status</span>
+          <label className="inline-flex items-center gap-1.5">
+            <input type="radio" name="status-filter" value="" checked={status === ''} onChange={() => setStatus('')} />
+            <span>All</span>
+          </label>
+          <label className="inline-flex items-center gap-1.5">
+            <input type="radio" name="status-filter" value="ACTIVE" checked={status === 'ACTIVE'} onChange={() => setStatus('ACTIVE')} />
+            <span>Active</span>
+          </label>
+          <label className="inline-flex items-center gap-1.5">
+            <input type="radio" name="status-filter" value="OUT_OF_SERVICE" checked={status === 'OUT_OF_SERVICE'} onChange={() => setStatus('OUT_OF_SERVICE')} />
+            <span>Out of Service</span>
+          </label>
+        </div>
+
+        <label className="inline-flex h-10 items-center gap-2 text-sm justify-self-start">
+          <input
+            type="checkbox"
+            checked={allowBookings}
+            onChange={(e) => setAllowBookings(e.target.checked)}
+          />
+          <span>Booking</span>
+        </label>
+
+        <label className="inline-flex h-10 items-center gap-2 text-sm justify-self-start">
+          <input
+            type="checkbox"
+            checked={allowRequests}
+            onChange={(e) => setAllowRequests(e.target.checked)}
+          />
+          <span>Request</span>
+        </label>
       </div>
 
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-          onClick={() => {
-            onApply({
-              keyword,
-              location,
-              capacity: capacity ? Number(capacity) : undefined,
-              type: type || undefined,
-              status: status || undefined,
-            });
-          }}
-        >
-          Apply Filters
-        </button>
-        <button
-          type="button"
-          className="rounded-md border border-border/70 px-4 py-2 text-sm font-medium"
-          onClick={() => {
-            setKeyword('');
-            setLocation('');
-            setCapacity('');
-            setType('');
-            setStatus('');
-            onApply({ keyword: '', location: '' });
-          }}
-        >
-          Reset
-        </button>
-      </div>
     </div>
   );
 }

@@ -9,7 +9,11 @@ const item: ResourceItem = {
   name: 'Main Hall',
   type: 'ROOM',
   capacity: 120,
+  building: 'MAIN',
+  floor: 1,
   location: 'Block A',
+  allowBookings: true,
+  allowRequests: false,
   description: 'Large hall',
   availabilityWindows: {},
   status: 'ACTIVE',
@@ -36,8 +40,11 @@ describe('ResourceTable', () => {
     );
 
     expect(screen.getByText('View')).toBeInTheDocument();
-    expect(screen.getByText('Edit')).toBeInTheDocument();
-    expect(screen.getByText('Mark OUT_OF_SERVICE')).toBeInTheDocument();
+    expect(screen.getByText('Main Building 1 st Floor')).toBeInTheDocument();
+    expect(screen.getByText('Yes')).toBeInTheDocument();
+    expect(screen.getByText('No')).toBeInTheDocument();
+    expect(screen.getByLabelText('Edit resource')).toBeInTheDocument();
+    expect(screen.getByText('Out of Service')).toBeInTheDocument();
   });
 
   it('hides admin actions when canManage is false', () => {
@@ -48,7 +55,7 @@ describe('ResourceTable', () => {
     );
 
     expect(screen.getByText('View')).toBeInTheDocument();
-    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
-    expect(screen.queryByText('Mark OUT_OF_SERVICE')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Edit resource')).not.toBeInTheDocument();
+    expect(screen.queryByText('Out of Service')).not.toBeInTheDocument();
   });
 });

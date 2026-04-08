@@ -52,6 +52,8 @@ function App() {
               <Route path="/admin/resources" element={<AdminResourcesPage />} />
               <Route path="/admin/resources/new" element={<AdminResourceFormPage />} />
               <Route path="/admin/resources/:id/edit" element={<AdminResourceFormPage />} />
+              <Route path="/admin/resources/:id/view" element={<ResourceDetailPage />} />
+              <Route path="/admin/resources/:id/view/calendar" element={<ResourceCalendarPage />} />
               <Route path="/admin/resources/browse" element={<ResourcesCatalogPage />} />
               <Route path="/admin/resources/browse/:id" element={<ResourceDetailPage />} />
               <Route path="/admin/resources/browse/:id/calendar" element={<ResourceCalendarPage />} />

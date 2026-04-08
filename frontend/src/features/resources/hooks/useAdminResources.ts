@@ -38,10 +38,10 @@ export function useAdminResources() {
     void fetchResources();
   }, [fetchResources]);
 
-  const applyFilters = (nextFilters: ResourceFilters) => {
+  const applyFilters = useCallback((nextFilters: ResourceFilters) => {
     setPage(0);
     setFilters(nextFilters);
-  };
+  }, []);
 
   const setPageSize = (nextSize: number) => {
     setPage(0);

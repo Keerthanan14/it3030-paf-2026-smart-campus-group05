@@ -192,9 +192,30 @@ class ResourceServiceImplTest {
                 "Main Lab",
                 ResourceType.LAB,
                 40,
-                "Block A",
+            "MAIN",
+            2,
+            40,
+            20,
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            40,
+            0,
                 "Lab",
-                Map.of("MONDAY", invalidWindow)
+                Map.of("MONDAY", invalidWindow),
+                true,
+                true
         );
 
         assertThrows(IllegalArgumentException.class, () -> resourceService.createResource(request));
@@ -210,10 +231,30 @@ class ResourceServiceImplTest {
                 "Main Lab",
                 ResourceType.LAB,
                 40,
-                "Block A",
+            "MAIN",
+            2,
+            40,
+            20,
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            40,
+            0,
                 "Lab",
-                Map.of("MONDAY", invalidWindow)
-        );
+                Map.of("MONDAY", invalidWindow),
+                true,
+                true        );
 
         assertThrows(IllegalArgumentException.class, () -> resourceService.createResource(request));
     }

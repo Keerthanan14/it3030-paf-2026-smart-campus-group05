@@ -15,7 +15,7 @@ export default function ResourceDetailPage() {
 
   const getBackLink = (userRole: string | undefined): string => {
     const normalized = (userRole ?? '').replace('ROLE_', '').toLowerCase();
-    if (normalized === 'admin') return '/admin/resources/browse';
+    if (normalized === 'admin') return '/admin/resources';
     if (normalized === 'technician') return '/technician/resources';
     return '/student/resources';
   };
