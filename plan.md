@@ -177,35 +177,43 @@ Deliverables:
 - Auth endpoints are available: login, logout, refresh, me, register request-code, verify-code, set-password, staff creation, and change-password.
 - Notification backend is implemented: entity, service, repository, REST endpoints, unread count, ownership checks, WebSocket push, and email sending.
 - Frontend auth plumbing exists: login page, OAuth callback page, token storage, API bearer header injection, and route guards.
-- Phase 8 is complete: the notification bell, inbox UI, unread badge, mark-read actions, and notification routing are implemented.
+- Frontend notification UX is implemented: bell dropdown, unread badge, mark-read/mark-all actions, notifications pages, and realtime bridge wiring.
+- Dark mode runtime is implemented with theme store/toggle and persisted preference.
 
 ### Partial
-- Frontend auth is functional but still uses a Zustand store instead of a dedicated AuthContext.
-- Backend email notifications work, but the HTML template layer described in the PRD is not finished.
-- Phase 9 is not fully complete in the current workspace: the realtime/theme runtime files are missing, and the root app entry still renders the stub App instead of the routed app.
-- The notification API/store layer exists, but SockJS/STOMP runtime wiring and the global ThemeContext are not present in the current working tree.
+- Backend email notifications work, but current content is plain text; HTML template format from PRD is still pending.
+- Auth state management works, but token is currently stored in localStorage (security hardening item remains).
 
 ### Not Started
+- Frontend route/page for admin audit logs (`/admin/audit-logs`).
+- Frontend route/page for user profile (`/profile`).
 - HATEOAS links for auth and notification responses.
 - Auth and notification test coverage.
 - Viva prep notes or documentation extracted from the implementation.
 
+## Current Remaining Work (Apr 10)
+
+1. Add frontend route/page for `/admin/audit-logs`.
+2. Add frontend route/page for `/profile`.
+3. Implement HATEOAS links in `GET /api/auth/me` and notification responses (item + collection level, including conditional `mark-read`).
+4. Upgrade notification emails to HTML template format (booking approved/rejected, ticket resolved).
+5. Align first-time OAuth role behavior with PRD expectation (`USER`) or update PRD/team agreement to current role (`STUDENT`).
+6. Improve auth token storage strategy (move away from localStorage for access token where feasible).
+7. Improve logout flow to clear refresh cookie on backend response.
+
 ## Revised Remaining Phases
 
-## Phase 9 - Realtime + Theme Completion
+## Phase 9 - Routing and UX Completion
 Goal:
-- Finish the live notification client and dark mode system.
+- Complete missing frontend routes required by Member 4 scope.
 
 Tasks:
-- Restore or add the SockJS and STOMP client dependencies if they are missing.
-- Connect the frontend to the WebSocket notification channel.
-- Show toast or pop-up messages for incoming notifications.
-- Introduce a full ThemeContext and apply theme globally.
-- Persist and restore the selected theme across refreshes.
+- Add `/admin/audit-logs` route and connect it to the existing audit API/UI.
+- Add `/profile` route and user profile page.
+- Ensure both are linked from navigation where appropriate.
 
 Deliverables:
-- Realtime notification updates work in the browser.
-- Dark mode is applied consistently across the app.
+- Required Member 4 frontend routes are present and accessible.
 
 ## Phase 10 - HATEOAS, QA, and Viva Readiness
 Goal:
@@ -213,9 +221,23 @@ Goal:
 
 Tasks:
 - Add HATEOAS links to auth and notification responses.
+- Add dynamic notification links based on state (`mark-read` only when unread, `reference` by type).
 - Verify response codes and error handling.
 - Add basic unit and integration tests for auth and notifications.
 - Write viva notes for OAuth2, JWT, WebSocket auth, notification ownership, and dark mode.
+
+## Phase 11 - Security and Email Hardening
+Goal:
+- Close the remaining security and communication quality gaps.
+
+Tasks:
+- Convert notification emails to HTML templates with consistent branding/content blocks.
+- Clear refresh cookie during logout response.
+- Decide and implement final access-token handling strategy (memory/cookie/localStorage) aligned with team policy.
+- Confirm and lock OAuth first-login default role behavior with the team and PRD.
+
+Deliverables:
+- Security and email behavior are aligned with PRD and ready for viva justification.
 
 Deliverables:
 - Member 4 work is demo-ready, testable, and easy to explain in the viva.
