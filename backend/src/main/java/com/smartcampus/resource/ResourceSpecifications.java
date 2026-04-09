@@ -19,6 +19,10 @@ public final class ResourceSpecifications {
         return (root, query, cb) -> status == null ? cb.conjunction() : cb.equal(root.get("status"), status);
     }
 
+    public static Specification<Resource> hasAllowBookings(Boolean allowBookings) {
+        return (root, query, cb) -> allowBookings == null ? cb.conjunction() : cb.equal(root.get("allowBookings"), allowBookings);
+    }
+
     public static Specification<Resource> minCapacity(Integer capacity) {
         return (root, query, cb) -> capacity == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("capacity"), capacity);
     }

@@ -77,6 +77,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PaginatedBookingResponse getBookings(UUID requesterUserId,
                                                 String requesterRole,
                                                 BookingStatus status,
@@ -120,6 +121,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BookingResponse getBookingById(UUID bookingId, UUID requesterUserId, String requesterRole) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new BookingNotFoundException("Booking not found for id: " + bookingId));
@@ -529,8 +531,12 @@ public class BookingServiceImpl implements BookingService {
 
     private void validateAttendeesCount(Resource resource, Integer attendeesCount) {
         if (resource.getType() == ResourceType.EQUIPMENT) {
-            if (attendeesCount != null && attendeesCount > resource.getCapacity()) {
-                throw new BookingBadRequestException("attendeesCount cannot exceed resource capacity");
+            int equipmentLimit = resource.getEquipmentCount() != null && resource.getEquipmentCount() > 0
+                    ? resource.getEquipmentCount()
+                    : resource.getCapacity();
+
+            if (attendeesCount != null && attendeesCount > equipmentLimit) {
+                throw new BookingBadRequestException("count cannot exceed equipment quantity");
             }
             return;
         }

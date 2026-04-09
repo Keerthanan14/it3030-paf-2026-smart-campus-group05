@@ -20,9 +20,11 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Service
 public class ResourceServiceImpl implements ResourceService {
@@ -47,6 +49,7 @@ public class ResourceServiceImpl implements ResourceService {
                                                   String location,
                                                   String keyword,
                                                   ResourceStatus status,
+                                                  Boolean allowBookings,
                                                   String requesterRole,
                                                   int page,
                                                   int size) {
@@ -65,7 +68,8 @@ public class ResourceServiceImpl implements ResourceService {
                 .and(ResourceSpecifications.minCapacity(capacity))
                 .and(ResourceSpecifications.hasLocationLike(location))
                 .and(ResourceSpecifications.hasKeyword(keyword))
-                .and(ResourceSpecifications.hasStatus(resolvedStatus));
+                .and(ResourceSpecifications.hasStatus(resolvedStatus))
+                .and(ResourceSpecifications.hasAllowBookings(allowBookings));
 
         Page<ResourceResponse> result = resourceRepository
                 .findAll(specification, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))
@@ -204,19 +208,31 @@ public class ResourceServiceImpl implements ResourceService {
 
         Resource resource = getExistingResource(id);
 
-        List<ResourceAvailabilityResponse.BookedSlotResponse> bookedSlots = bookingRepository
-            .findByResource_IdAndStatusAndBookingDateBetweenOrderByBookingDateAscStartTimeAsc(
-                id,
-                BookingStatus.APPROVED,
-                from,
-                to
-            )
-            .stream()
+        List<ResourceAvailabilityResponse.BookedSlotResponse> bookedSlots = Stream.concat(
+            bookingRepository
+                .findByResource_IdAndStatusAndBookingDateBetweenOrderByBookingDateAscStartTimeAsc(
+                    id,
+                    BookingStatus.PENDING,
+                    from,
+                    to
+                )
+                .stream(),
+            bookingRepository
+                .findByResource_IdAndStatusAndBookingDateBetweenOrderByBookingDateAscStartTimeAsc(
+                    id,
+                    BookingStatus.APPROVED,
+                    from,
+                    to
+                )
+                .stream()
+        )
+            .sorted(Comparator.comparing(booking -> booking.getBookingDate().atTime(booking.getStartTime())))
             .map(booking -> new ResourceAvailabilityResponse.BookedSlotResponse(
                 booking.getBookingDate().toString(),
                 booking.getStartTime().toString(),
                 booking.getEndTime().toString(),
-                booking.getPurpose()
+            booking.getPurpose(),
+            booking.getAttendeesCount()
             ))
             .toList();
 
