@@ -15,6 +15,7 @@ public interface ResourceService {
                                            String location,
                                            String keyword,
                                            ResourceStatus status,
+                                           Boolean allowBookings,
                                            String requesterRole,
                                            int page,
                                            int size);

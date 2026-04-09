@@ -109,6 +109,7 @@ export interface BookedSlot {
 	startTime: string;
 	endTime: string;
 	purpose?: string;
+	attendeesCount?: number;
 }
 
 export interface ResourceAvailabilityResponse {

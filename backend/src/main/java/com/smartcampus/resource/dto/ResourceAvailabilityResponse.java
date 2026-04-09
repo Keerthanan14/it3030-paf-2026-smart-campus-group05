@@ -16,7 +16,8 @@ public record ResourceAvailabilityResponse(
             String date,
             String startTime,
             String endTime,
-            String purpose
+            String purpose,
+            Integer attendeesCount
     ) {
     }
 }

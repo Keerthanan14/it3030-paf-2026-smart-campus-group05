@@ -10,6 +10,10 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+
 @Service
 public class EmailService {
 
@@ -54,6 +58,45 @@ public class EmailService {
 
     public void sendEmail(String to, String subject, String body) {
         send(to, subject, body, "generic", "generic-email");
+    }
+
+    public void sendBookingConfirmation(String email, String userName, String resourceName, 
+                                       LocalDate bookingDate, LocalTime startTime, LocalTime endTime,
+                                       String bookingId, String qrCodeUrl, String baseUrl) {
+        String subject = "Smart Campus - Booking Confirmed";
+        
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
+        
+        String formattedDate = bookingDate.format(dateFormatter);
+        String formattedStartTime = startTime.format(timeFormatter);
+        String formattedEndTime = endTime.format(timeFormatter);
+
+        String qrDownloadLink = null;
+        if (StringUtils.hasText(qrCodeUrl)) {
+            if (qrCodeUrl.startsWith("http://") || qrCodeUrl.startsWith("https://")) {
+                qrDownloadLink = qrCodeUrl;
+            } else {
+                qrDownloadLink = baseUrl + qrCodeUrl;
+            }
+        }
+        
+        String body = "Hi " + userName + ",\n\n"
+                + "Your booking has been confirmed!\n\n"
+                + "Resource: " + resourceName + "\n"
+                + "Date: " + formattedDate + "\n"
+                + "Time: " + formattedStartTime + " - " + formattedEndTime + "\n"
+                + "Booking ID: " + bookingId + "\n\n";
+
+        if (StringUtils.hasText(qrDownloadLink)) {
+            body += "Your QR Code:\n"
+                + "Download: " + qrDownloadLink + "\n\n"
+                + "Please present this QR code when using the resource.\n\n";
+        }
+
+        body += "Smart Campus Operations Hub";
+        
+        send(email, subject, body, bookingId, "booking-confirmation");
     }
 
     private void send(String to, String subject, String body, String debugSecret, String debugType) {

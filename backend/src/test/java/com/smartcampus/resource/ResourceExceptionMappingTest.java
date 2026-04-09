@@ -1,5 +1,6 @@
 package com.smartcampus.resource;
 
+import com.smartcampus.audit.AuditLogService;
 import com.smartcampus.exception.ConflictException;
 import com.smartcampus.exception.GlobalExceptionHandler;
 import com.smartcampus.exception.ResourceNotFoundException;
@@ -39,6 +40,9 @@ class ResourceExceptionMappingTest {
 
     @Mock
     private ResourceService resourceService;
+
+        @Mock
+        private AuditLogService auditLogService;
 
     @InjectMocks
     private ResourceController resourceController;
@@ -157,6 +161,7 @@ class ResourceExceptionMappingTest {
         );
 
         when(resourceService.createResource(org.mockito.ArgumentMatchers.any(CreateResourceRequest.class))).thenReturn(response);
+        when(resourceService.getResourceById(eq(id))).thenReturn(response);
         when(resourceService.updateResource(eq(id), org.mockito.ArgumentMatchers.any(UpdateResourceRequest.class))).thenReturn(response);
         when(resourceService.updateResourceStatus(eq(id), eq(ResourceStatus.ACTIVE))).thenReturn(response);
 

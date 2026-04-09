@@ -139,6 +139,12 @@ class ResourceServiceImplTest {
 
         when(resourceRepository.findByIdAndDeletedFalse(resourceId)).thenReturn(Optional.of(resource));
         when(bookingRepository.findByResource_IdAndStatusAndBookingDateBetweenOrderByBookingDateAscStartTimeAsc(
+            resourceId,
+            BookingStatus.PENDING,
+            from,
+            to
+        )).thenReturn(List.of());
+        when(bookingRepository.findByResource_IdAndStatusAndBookingDateBetweenOrderByBookingDateAscStartTimeAsc(
                 resourceId,
                 BookingStatus.APPROVED,
                 from,

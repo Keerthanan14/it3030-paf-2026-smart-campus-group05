@@ -60,11 +60,12 @@ public class ResourceController {
             @RequestParam(required = false) String location,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) ResourceStatus status,
+            @RequestParam(required = false) Boolean allowBookings,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             UriComponentsBuilder uriBuilder) {
         String requesterRole = principal != null ? principal.role() : null;
-        PaginatedResourceResponse response = resourceService.getResources(type, capacity, location, keyword, status, requesterRole, page, size);
+        PaginatedResourceResponse response = resourceService.getResources(type, capacity, location, keyword, status, allowBookings, requesterRole, page, size);
 
         List<EntityModel<ResourceResponse>> resources = response.content().stream()
                 .map(this::toResourceModel)
@@ -77,6 +78,7 @@ public class ResourceController {
                 .queryParamIfPresent("location", java.util.Optional.ofNullable(location))
                 .queryParamIfPresent("keyword", java.util.Optional.ofNullable(keyword))
                 .queryParamIfPresent("status", java.util.Optional.ofNullable(status))
+                .queryParamIfPresent("allowBookings", java.util.Optional.ofNullable(allowBookings))
                 .queryParam("page", page)
                 .queryParam("size", size)
                 .build()
@@ -245,7 +247,7 @@ public class ResourceController {
         EntityModel<ResourceResponse> model = EntityModel.of(resource)
                 .add(linkTo(methodOn(ResourceController.class).getResourceById(resource.id())).withSelfRel())
                 .add(linkTo(methodOn(ResourceController.class).getResources(
-                    null, null, null, null, null, null, 0, 10, null
+                    null, null, null, null, null, null, null, 0, 10, null
                 )).withRel("all-resources"));
 
         if (resource.status() == ResourceStatus.ACTIVE) {
