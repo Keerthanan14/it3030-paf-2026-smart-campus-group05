@@ -21,6 +21,7 @@ public record BookingResponse(
         Integer attendeesCount,
         BookingStatus status,
         String rejectionReason,
+        String qrCodeUrl,
         LocalDateTime createdAt,
                 LocalDateTime updatedAt,
                 Map<String, LinkResponse> _links

@@ -44,6 +44,7 @@ export default function StudentBookingsPage() {
     resetCreateForm,
     isCreateModalOpen,
     setIsCreateModalOpen,
+    closeBookingDetail,
     canSubmit,
     refreshList,
     onCreateBooking,
@@ -128,7 +129,12 @@ export default function StudentBookingsPage() {
         onSizeChange={setSize}
       />
 
-      <BookingDetailPanel selectedBooking={selectedBooking} isDetailLoading={isDetailLoading} />
+      <BookingDetailPanel
+        selectedBooking={selectedBooking}
+        isDetailLoading={isDetailLoading}
+        resources={resources}
+        onClose={closeBookingDetail}
+      />
     </div>
   );
 }

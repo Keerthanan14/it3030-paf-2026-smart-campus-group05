@@ -59,6 +59,7 @@ interface UseStudentBookingPageResult {
   resetCreateForm: () => void;
   isCreateModalOpen: boolean;
   setIsCreateModalOpen: (value: boolean) => void;
+  closeBookingDetail: () => void;
   selectedResourceLabel: string | null;
   canSubmit: boolean;
   refreshList: () => Promise<void>;
@@ -550,6 +551,10 @@ export function useStudentBookingPage(): UseStudentBookingPageResult {
     await fetchBookingById(id);
   };
 
+  const closeBookingDetail = (): void => {
+    useBookingStore.getState().setSelectedBooking(null);
+  };
+
   const onCancelBooking = async (id: string): Promise<void> => {
     const confirmed = window.confirm('Cancel this approved booking?');
     if (!confirmed) {
@@ -609,6 +614,7 @@ export function useStudentBookingPage(): UseStudentBookingPageResult {
     resetCreateForm,
     isCreateModalOpen,
     setIsCreateModalOpen,
+    closeBookingDetail,
     selectedResourceLabel,
     canSubmit,
     refreshList,

@@ -138,6 +138,15 @@ export const bookingApi = {
 		});
 	},
 
+	updateBookingQrFromSummaryImage(id: string, imageDataUrl: string) {
+		return withBookingErrorHandling(async () => {
+			const response = await api.put<BookingItem>(`/bookings/${id}/qr-from-summary-image`, {
+				imageDataUrl,
+			});
+			return response.data;
+		});
+	},
+
 	rejectBooking(id: string, payload: RejectBookingRequest) {
 		return withBookingErrorHandling(async () => {
 			const response = await api.put<BookingItem>(`/bookings/${id}/reject`, payload);

@@ -21,6 +21,7 @@ export interface BookingItem {
 	attendeesCount: number;
 	status: BookingStatus;
 	rejectionReason: string | null;
+	qrCodeUrl: string | null;
 	createdAt: string;
 	updatedAt: string;
 	_links?: BookingLinks;

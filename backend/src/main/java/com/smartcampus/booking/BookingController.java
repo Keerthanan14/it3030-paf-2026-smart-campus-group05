@@ -4,6 +4,7 @@ import com.smartcampus.booking.dto.BookingResponse;
 import com.smartcampus.booking.dto.CreateBookingRequest;
 import com.smartcampus.booking.dto.PaginatedBookingResponse;
 import com.smartcampus.booking.dto.RejectBookingRequest;
+import com.smartcampus.booking.dto.UpdateBookingQrImageRequest;
 import com.smartcampus.security.AuthUserPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -97,6 +98,20 @@ public class BookingController {
         return ResponseEntity.ok(addDynamicLinks(bookingService.approveBooking(id)));
     }
 
+    @PutMapping("/{id}/qr-from-summary-image")
+    public ResponseEntity<BookingResponse> updateBookingQrFromSummaryImage(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateBookingQrImageRequest request,
+            @AuthenticationPrincipal AuthUserPrincipal principal) {
+        BookingResponse updated = bookingService.updateBookingQrFromSummaryImage(
+                id,
+                request.imageDataUrl(),
+                principal.userId(),
+                principal.role()
+        );
+        return ResponseEntity.ok(addDynamicLinks(updated));
+    }
+
     @PutMapping("/{id}/reject")
     public ResponseEntity<BookingResponse> rejectBooking(
             @PathVariable UUID id,
@@ -168,6 +183,7 @@ public class BookingController {
                 booking.attendeesCount(),
                 booking.status(),
                 booking.rejectionReason(),
+                booking.qrCodeUrl(),
                 booking.createdAt(),
                 booking.updatedAt(),
                 links

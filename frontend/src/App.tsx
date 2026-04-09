@@ -21,6 +21,7 @@ import TechnicianDashboardPage from './pages/technician/TechnicianDashboardPage'
 import TechnicianTicketsPage from './pages/technician/TechnicianTicketsPage';
 import StudentSettingsPage from './pages/student/StudentSettingsPage';
 import StudentTicketsPage from './pages/student/StudentTicketsPage';
+import BookingScanResultPage from './pages/BookingScanResultPage';
 import { AdminRoute, ProtectedRoute, StudentRoute, TechnicianRoute } from './routes/RouteGuards.tsx';
 import { NotificationRealtimeBridge } from './features/notification/components/NotificationRealtimeBridge';
 
@@ -41,6 +42,8 @@ function App() {
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
+            <Route path="/booking/scan/:bookingId" element={<BookingScanResultPage />} />
+
             <Route element={<AdminRoute />}>
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />

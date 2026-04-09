@@ -17,6 +17,7 @@ import com.smartcampus.exception.BookingConflictException;
 import com.smartcampus.exception.BookingForbiddenException;
 import com.smartcampus.exception.BookingNotFoundException;
 import com.smartcampus.exception.ResourceNotFoundException;
+import com.smartcampus.notification.EmailService;
 import com.smartcampus.notification.NotificationService;
 import com.smartcampus.resource.AvailabilityWindow;
 import com.smartcampus.resource.Resource;
@@ -32,6 +33,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,6 +41,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -63,17 +67,29 @@ public class BookingServiceImpl implements BookingService {
     private final ResourceRepository resourceRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+    private final QRCodeService qrCodeService;
+    private final BookingQrGenerationService bookingQrGenerationService;
+    private final EmailService emailService;
+    private final String baseUrl;
 
     public BookingServiceImpl(BookingRepository bookingRepository,
                               UserRepository userRepository,
                               ResourceRepository resourceRepository,
                               NotificationService notificationService,
-                              AuditLogService auditLogService) {
+                              AuditLogService auditLogService,
+                              QRCodeService qrCodeService,
+                              BookingQrGenerationService bookingQrGenerationService,
+                              EmailService emailService,
+                              @Value("${app.base-url:http://localhost:8080}") String baseUrl) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
+        this.qrCodeService = qrCodeService;
+        this.bookingQrGenerationService = bookingQrGenerationService;
+        this.emailService = emailService;
+        this.baseUrl = baseUrl;
     }
 
     @Override
@@ -174,7 +190,8 @@ public class BookingServiceImpl implements BookingService {
         booking.setAttendeesCount(request.attendeesCount());
         booking.setStatus(BookingStatus.PENDING);
 
-        return toResponse(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+        return toResponse(savedBooking);
     }
 
     @Override
@@ -216,7 +233,20 @@ public class BookingServiceImpl implements BookingService {
         BookingStatus previousStatus = booking.getStatus();
         booking.setStatus(BookingStatus.APPROVED);
         booking.setRejectionReason(null);
+        booking.setQrCodeUrl(null);
+
         Booking saved = bookingRepository.save(booking);
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    bookingQrGenerationService.generateApprovedBookingQr(saved.getId());
+                }
+            });
+        } else {
+            bookingQrGenerationService.generateApprovedBookingQr(saved.getId());
+        }
 
         logBookingStatusChange(
             resolveAuthenticatedUserId(),
@@ -227,6 +257,45 @@ public class BookingServiceImpl implements BookingService {
         );
 
         notificationService.sendBookingNotification(saved.getUser().getId(), saved.getId(), true, null);
+
+        // Send booking confirmation email with QR code
+        try {
+            emailService.sendBookingConfirmation(
+                saved.getUser().getEmail(),
+                saved.getUser().getName(),
+                saved.getResource().getName(),
+                saved.getBookingDate(),
+                saved.getStartTime(),
+                saved.getEndTime(),
+                saved.getId().toString(),
+                saved.getQrCodeUrl(),
+                baseUrl
+            );
+        } catch (Exception e) {
+            System.err.println("Failed to send booking confirmation email: " + e.getMessage());
+            // Don't throw exception - email failure shouldn't fail the booking approval
+        }
+
+        return toResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public BookingResponse updateBookingQrFromSummaryImage(UUID bookingId, String imageDataUrl, UUID requesterUserId, String requesterRole) {
+        if (!isAdminRole(requesterRole)) {
+            throw new BookingForbiddenException("Only ADMIN can update booking QR image");
+        }
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found for id: " + bookingId));
+
+        if (booking.getStatus() != BookingStatus.APPROVED) {
+            throw new BookingBadRequestException("QR image can be updated only for APPROVED bookings");
+        }
+
+        String qrCodeUrl = qrCodeService.generateAndStoreQRCodeFromBookingSummaryImage(booking);
+        booking.setQrCodeUrl(qrCodeUrl);
+        Booking saved = bookingRepository.save(booking);
 
         return toResponse(saved);
     }
@@ -593,6 +662,14 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
+    private String ensureQrCodeUrl(Booking booking) {
+        if (booking.getStatus() != BookingStatus.APPROVED) {
+            return null;
+        }
+
+        return booking.getQrCodeUrl();
+    }
+
     private BookingResponse toResponse(Booking booking) {
         return new BookingResponse(
                 booking.getId(),
@@ -607,6 +684,7 @@ public class BookingServiceImpl implements BookingService {
                 booking.getAttendeesCount(),
                 booking.getStatus(),
                 booking.getRejectionReason(),
+                ensureQrCodeUrl(booking),
                 booking.getCreatedAt(),
                 booking.getUpdatedAt(),
                 null

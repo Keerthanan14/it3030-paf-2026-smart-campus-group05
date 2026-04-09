@@ -29,6 +29,8 @@ public interface BookingService {
 
     BookingResponse cancelBooking(UUID bookingId, UUID requesterUserId);
 
+    BookingResponse updateBookingQrFromSummaryImage(UUID bookingId, String imageDataUrl, UUID requesterUserId, String requesterRole);
+
     int autoRejectPendingForResourceOutOfService(UUID resourceId);
 
     byte[] exportBookingsPdf(BookingStatus status, UUID resourceId, LocalDate from, LocalDate to);

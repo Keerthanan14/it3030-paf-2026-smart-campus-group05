@@ -6,6 +6,7 @@ import com.smartcampus.exception.BookingBadRequestException;
 import com.smartcampus.exception.BookingConflictException;
 import com.smartcampus.exception.BookingForbiddenException;
 import com.smartcampus.exception.BookingNotFoundException;
+import com.smartcampus.notification.EmailService;
 import com.smartcampus.notification.NotificationService;
 import com.smartcampus.resource.AvailabilityWindow;
 import com.smartcampus.resource.Resource;
@@ -19,8 +20,10 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
@@ -59,6 +62,15 @@ class BookingServiceImplTest {
     @Mock
     private AuditLogService auditLogService;
 
+    @Mock
+    private QRCodeService qrCodeService;
+
+    @Mock
+    private BookingQrGenerationService bookingQrGenerationService;
+
+    @Mock
+    private EmailService emailService;
+
     private BookingServiceImpl bookingService;
 
     @BeforeEach
@@ -68,7 +80,11 @@ class BookingServiceImplTest {
                 userRepository,
                 resourceRepository,
                 notificationService,
-                auditLogService
+                auditLogService,
+                qrCodeService,
+                bookingQrGenerationService,
+                emailService,
+                "http://localhost:8080"
         );
     }
 
@@ -297,7 +313,7 @@ class BookingServiceImplTest {
         Booking rejected = newBooking(bookingId, UUID.randomUUID(), BookingStatus.REJECTED);
         rejected.setRejectionReason("Resource is out of service.");
 
-        when(bookingRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Sort.class)))
+        when(bookingRepository.findAll(ArgumentMatchers.<Specification<Booking>>any(), any(org.springframework.data.domain.Sort.class)))
                 .thenReturn(List.of(rejected));
 
         byte[] excel = bookingService.exportBookingsExcel(null, null, null, null);
