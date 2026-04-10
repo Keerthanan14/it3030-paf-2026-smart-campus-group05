@@ -122,7 +122,6 @@ export function useTechnicianTicketsPageLogic(): TechnicianTicketsPageLogic {
     try {
       await addComment(ticket.id, commentDraft.trim());
       setCommentDraft("");
-      toast.success("Comment added");
       await refreshDetail();
     } catch (error) {
       toast.error("Could not add comment", getApiErrorMessage(error, "Try again."));
@@ -154,12 +153,9 @@ export function useTechnicianTicketsPageLogic(): TechnicianTicketsPageLogic {
 
   const removeComment = async (commentId: string): Promise<void> => {
     if (!ticket) return;
-    const confirmed = window.confirm("Delete this comment?");
-    if (!confirmed) return;
 
     try {
       await deleteComment(ticket.id, commentId);
-      toast.success("Comment deleted");
       await refreshDetail();
     } catch (error) {
       toast.error("Could not delete comment", getApiErrorMessage(error, "Try again."));

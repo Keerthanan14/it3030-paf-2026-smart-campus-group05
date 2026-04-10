@@ -22,6 +22,8 @@ public interface NotificationService {
 
     void sendTicketCreatedNotification(UUID userId, UUID ticketId, String priority);
 
+    void sendTicketCreatedNotificationToAdmins(UUID ticketId, String priority, UUID ticketOwnerId);
+
     void sendTicketStatusNotification(UUID userId, UUID ticketId, String status);
 
     void sendNewCommentNotification(UUID ticketOwnerId, UUID ticketId, String commenterName);

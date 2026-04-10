@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useToast } from "../../../shared/components/ui/useToast";
 import { useAuthStore } from "../../../core/store/authStore";
 import useTicketActions from "./useTicketActions";
-import useTicketAuditLogs from "./useTicketAuditLogs";
 import useTicketAutoRefresh from "./useTicketAutoRefresh";
 import useTicketComments from "./useTicketComments";
 import useTicketDetail from "./useTicketDetail";
@@ -65,20 +64,6 @@ export type AdminTicketsPageLogic = {
     saveEditedComment: () => Promise<void>;
     removeComment: (commentId: string) => Promise<void>;
   };
-  audit: {
-    items: ReturnType<typeof useTicketAuditLogs>["items"];
-    loading: ReturnType<typeof useTicketAuditLogs>["loading"];
-    error: ReturnType<typeof useTicketAuditLogs>["error"];
-    filters: ReturnType<typeof useTicketAuditLogs>["filters"];
-    page: ReturnType<typeof useTicketAuditLogs>["page"];
-    size: ReturnType<typeof useTicketAuditLogs>["size"];
-    totalPages: ReturnType<typeof useTicketAuditLogs>["totalPages"];
-    totalElements: ReturnType<typeof useTicketAuditLogs>["totalElements"];
-    setPage: ReturnType<typeof useTicketAuditLogs>["setPage"];
-    setSize: ReturnType<typeof useTicketAuditLogs>["setSize"];
-    updateFilters: ReturnType<typeof useTicketAuditLogs>["updateFilters"];
-    refresh: ReturnType<typeof useTicketAuditLogs>["refresh"];
-  };
 };
 
 export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
@@ -102,21 +87,6 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
 
   const { loading: actionLoading, error: actionError, updateStatus, assignTechnician } = useTicketActions();
   const { ticket, loading: detailLoading, error: detailError, setSelectedTicketId, refresh: refreshDetail } = useTicketDetail();
-
-  const {
-    items: auditItems,
-    loading: auditLoading,
-    error: auditError,
-    filters: auditFilters,
-    page: auditPage,
-    size: auditSize,
-    totalPages: auditTotalPages,
-    totalElements: auditTotalElements,
-    setPage: setAuditPage,
-    setSize: setAuditSize,
-    updateFilters: updateAuditFilters,
-    refresh: refreshAudit,
-  } = useTicketAuditLogs({ defaultEntityType: "TICKET" });
 
   const [assignedToFilter, setAssignedToFilter] = useState(filters.assignedTo ?? "");
   const [technicianId, setTechnicianId] = useState("");
@@ -176,7 +146,6 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
     try {
       await addComment(ticket.id, commentDraft.trim());
       setCommentDraft("");
-      toast.success("Comment added");
       await refreshDetail();
     } catch (error) {
       toast.error("Could not add comment", getApiErrorMessage(error, "Try again."));
@@ -208,12 +177,9 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
 
   const removeComment = async (commentId: string): Promise<void> => {
     if (!ticket) return;
-    const confirmed = window.confirm("Delete this comment?");
-    if (!confirmed) return;
 
     try {
       await deleteComment(ticket.id, commentId);
-      toast.success("Comment deleted");
       await refreshDetail();
     } catch (error) {
       toast.error("Could not delete comment", getApiErrorMessage(error, "Try again."));
@@ -278,20 +244,6 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
       handleAddComment,
       saveEditedComment,
       removeComment,
-    },
-    audit: {
-      items: auditItems,
-      loading: auditLoading,
-      error: auditError,
-      filters: auditFilters,
-      page: auditPage,
-      size: auditSize,
-      totalPages: auditTotalPages,
-      totalElements: auditTotalElements,
-      setPage: setAuditPage,
-      setSize: setAuditSize,
-      updateFilters: updateAuditFilters,
-      refresh: refreshAudit,
     },
   };
 }

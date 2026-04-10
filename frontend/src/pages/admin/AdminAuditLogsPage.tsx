@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTicketAuditLogs } from '../../features/ticket/hooks/useTicketAuditLogs';
+import { useTicketAutoRefresh } from '../../features/ticket/hooks/useTicketAutoRefresh';
 import { StickyPageHeader } from '../../shared/components/ui/StickyPageHeader';
 import { Card } from '../../shared/components/ui/Card';
 import { Input } from '../../shared/components/ui/Input';
@@ -26,7 +27,14 @@ export default function AdminAuditLogsPage() {
     setPage,
     setSize,
     applyFilters,
+    refresh,
   } = useTicketAuditLogs();
+
+  useTicketAutoRefresh({
+    enabled: true,
+    intervalMs: 15000,
+    onRefresh: refresh,
+  });
 
   const [draftFilters, setDraftFilters] = useState<AuditFilterDraft>({
     entityType: '',

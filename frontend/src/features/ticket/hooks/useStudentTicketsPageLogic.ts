@@ -28,7 +28,7 @@ export type StudentTicketsPageLogic = {
     setPriority: (value: TicketPriority) => void;
     setPreferredContact: (value: string) => void;
     handleFileSelection: (files: FileList | null) => void;
-    handleCreateTicket: () => Promise<void>;
+    handleCreateTicket: () => Promise<boolean>;
   };
   list: {
     tickets: ReturnType<typeof useTicketsList>["tickets"];
@@ -126,8 +126,8 @@ export function useStudentTicketsPageLogic(): StudentTicketsPageLogic {
     [category, description]
   );
 
-  const handleCreateTicket = async (): Promise<void> => {
-    if (!canSubmit) return;
+  const handleCreateTicket = async (): Promise<boolean> => {
+    if (!canSubmit) return false;
 
     const payload = {
       category: category.trim(),
@@ -146,7 +146,7 @@ export function useStudentTicketsPageLogic(): StudentTicketsPageLogic {
       toast.success("Ticket created", "Your support request has been submitted.");
     } catch (error) {
       toast.error("Ticket creation failed", getApiErrorMessage(error, "Please check your inputs and try again."));
-      return;
+      return false;
     }
 
     setCategory("");
@@ -155,6 +155,7 @@ export function useStudentTicketsPageLogic(): StudentTicketsPageLogic {
     setPreferredContact("");
     setImages([]);
     await refresh();
+    return true;
   };
 
   const handleAddComment = async (): Promise<void> => {
@@ -163,7 +164,6 @@ export function useStudentTicketsPageLogic(): StudentTicketsPageLogic {
     try {
       await addComment(ticket.id, commentDraft.trim());
       setCommentDraft("");
-      toast.success("Comment added");
       await refreshDetail();
     } catch (error) {
       toast.error("Could not add comment", getApiErrorMessage(error, "Try again."));
@@ -209,12 +209,9 @@ export function useStudentTicketsPageLogic(): StudentTicketsPageLogic {
 
   const removeComment = async (commentId: string): Promise<void> => {
     if (!ticket) return;
-    const confirmed = window.confirm("Delete this comment?");
-    if (!confirmed) return;
 
     try {
       await deleteComment(ticket.id, commentId);
-      toast.success("Comment deleted");
       await refreshDetail();
     } catch (error) {
       toast.error("Could not delete comment", getApiErrorMessage(error, "Try again."));

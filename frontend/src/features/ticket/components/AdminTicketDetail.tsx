@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Button } from "../../../shared/components/ui/Button";
 import { Input } from "../../../shared/components/ui/Input";
+import { Pencil, Trash2 } from "lucide-react";
 import type { Ticket, TicketComment, TicketStatus } from "../../../types/ticket";
 import BaseTicketDetail from "./BaseTicketDetail";
 
@@ -60,12 +62,20 @@ export function AdminTicketDetail({
   onSaveEditedComment,
   onRemoveComment,
 }: AdminTicketDetailProps) {
+  const [deleteTargetCommentId, setDeleteTargetCommentId] = useState<string | null>(null);
+
   const metaFields = [
     { label: "Category", value: ticket?.category ?? "-" },
     { label: "Requester", value: ticket?.userName ?? "-" },
     { label: "Priority", value: ticket?.priority ?? "-" },
     { label: "Assigned", value: ticket?.assignedToName ?? "Unassigned" },
   ];
+
+  const confirmDeleteComment = (): void => {
+    if (!deleteTargetCommentId) return;
+    onRemoveComment(deleteTargetCommentId);
+    setDeleteTargetCommentId(null);
+  };
 
   const contentActions = (
     <>
@@ -105,6 +115,7 @@ export function AdminTicketDetail({
       title="Ticket Detail & Actions"
       emptyMessage="Select a ticket to manage assignment and status."
       ticket={ticket}
+      showChat={false}
       detailLoading={detailLoading}
       detailError={detailError}
       actionError={actionError}
@@ -125,22 +136,48 @@ export function AdminTicketDetail({
       onCancelEditComment={onCancelEditComment}
       onEditingCommentValueChange={onEditingCommentValueChange}
       onSaveEditedComment={onSaveEditedComment}
-      renderCommentActions={(comment) => (
-        <>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => onStartEditComment(comment.id, comment.content)}
-            disabled={currentUserId !== comment.userId}
-          >
-            Edit
-          </Button>
-          <Button type="button" size="sm" variant="danger" onClick={() => onRemoveComment(comment.id)} disabled={!canAddComment}>
-            Delete
-          </Button>
-        </>
-      )}
+      renderCommentActions={(comment) => {
+        if (deleteTargetCommentId === comment.id) {
+          return (
+            <div className="flex items-center gap-1 rounded-md border border-border/70 bg-background/95 px-2 py-1 text-xs">
+              <span>Delete?</span>
+              <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setDeleteTargetCommentId(null)}>
+                No
+              </Button>
+              <Button type="button" size="sm" variant="danger" className="h-6 px-2 text-xs" onClick={confirmDeleteComment}>
+                Yes
+              </Button>
+            </div>
+          );
+        }
+
+        return (
+          <>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 border-0 p-0 shadow-none"
+              onClick={() => onStartEditComment(comment.id, comment.content)}
+              disabled={currentUserId !== comment.userId}
+              aria-label="Edit comment"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 border-0 p-0 text-rose-600 shadow-none hover:bg-rose-50 hover:text-rose-700"
+              onClick={() => setDeleteTargetCommentId(comment.id)}
+              disabled={!canAddComment}
+              aria-label="Delete comment"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </>
+        );
+      }}
     />
   );
 }

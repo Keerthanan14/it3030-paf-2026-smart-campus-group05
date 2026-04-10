@@ -4,6 +4,7 @@ import { Building2, CalendarClock, Ticket, Users } from 'lucide-react';
 import { bookingApi } from '../../core/api/bookingApi';
 import { resourceApi } from '../../core/api/resourceApi';
 import { ticketApi } from '../../core/api/ticketApi';
+import { useAuthStore } from '../../core/store/authStore';
 import { userApi } from '../../core/api/userApi';
 import { Card } from '../../shared/components/ui/Card';
 import { StickyPageHeader } from '../../shared/components/ui/StickyPageHeader';
@@ -45,6 +46,7 @@ const formatCount = (value: number | null) => {
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const [metrics, setMetrics] = useState<DashboardMetrics>(initialMetrics);
   const [adminLogs, setAdminLogs] = useState<AuditLogItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,7 +68,11 @@ export default function AdminDashboardPage() {
           bookingApi.getBookings({ page: 0, size: Math.max(bookingsSummaryResponse.totalElements, 1) }),
         ]);
 
-        const auditLogsResponse = await ticketApi.listAuditLogs({ page: 0, size: 5 });
+        const auditLogsResponse = await ticketApi.listAuditLogs({
+          page: 0,
+          size: 5,
+          userId: currentUserId,
+        });
 
         if (!isMounted) {
           return;
@@ -109,7 +115,7 @@ export default function AdminDashboardPage() {
       isMounted = false;
       window.clearInterval(refreshTimer);
     };
-  }, []);
+  }, [currentUserId]);
 
   const stats = [
     {

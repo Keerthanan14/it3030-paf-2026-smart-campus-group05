@@ -3,6 +3,7 @@ package com.smartcampus.notification;
 import com.smartcampus.notification.dto.NotificationResponse;
 import com.smartcampus.notification.dto.NotificationUpdateResponse;
 import com.smartcampus.notification.dto.PaginatedNotificationResponse;
+import com.smartcampus.user.Role;
 import com.smartcampus.user.User;
 import com.smartcampus.user.UserRepository;
 import org.springframework.data.domain.Page;
@@ -163,6 +164,28 @@ public class NotificationServiceImpl implements NotificationService {
                 NotificationType.TICKET_CREATED,
                 message
         );
+    }
+
+    @Override
+    @Transactional
+    public void sendTicketCreatedNotificationToAdmins(UUID ticketId, String priority, UUID ticketOwnerId) {
+        String normalizedPriority = priority == null ? "UNKNOWN" : priority.trim().toUpperCase();
+        String message = "A new ticket was created with priority " + normalizedPriority + ".";
+
+        List<User> admins = userRepository.findAllByRole(Role.ADMIN);
+        for (User admin : admins) {
+            if (admin.getId().equals(ticketOwnerId)) {
+                continue;
+            }
+
+            createAndPushNotification(
+                    admin.getId(),
+                    ticketId,
+                    ReferenceType.TICKET,
+                    NotificationType.TICKET_CREATED,
+                    message
+            );
+        }
     }
 
     @Override
