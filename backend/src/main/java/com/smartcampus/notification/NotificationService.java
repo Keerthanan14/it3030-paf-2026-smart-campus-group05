@@ -14,7 +14,13 @@ public interface NotificationService {
 
     NotificationUpdateResponse markAllAsRead(UUID userId);
 
+    void sendBookingCreatedNotification(UUID userId, UUID bookingId);
+
     void sendBookingNotification(UUID userId, UUID bookingId, boolean approved, String reason);
+
+    void sendBookingCancelledNotification(UUID userId, UUID bookingId);
+
+    void sendTicketCreatedNotification(UUID userId, UUID ticketId, String priority);
 
     void sendTicketStatusNotification(UUID userId, UUID ticketId, String status);
 

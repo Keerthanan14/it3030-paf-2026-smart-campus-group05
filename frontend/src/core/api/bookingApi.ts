@@ -104,7 +104,7 @@ const extractFilename = (contentDisposition: string | undefined, fallbackName: s
 };
 
 export const bookingApi = {
-	getBookings({ page = 0, size = 10, filters = {} }: ListBookingsParams = {}) {
+	getBookings({ page = 0, size = 5, filters = {} }: ListBookingsParams = {}) {
 		return withBookingErrorHandling(async () => {
 			const response = await api.get<PaginatedBookingResponse>('/bookings', {
 				params: {

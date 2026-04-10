@@ -189,6 +189,12 @@ public class TicketServiceImpl implements TicketService {
             )
         );
 
+            notificationService.sendTicketCreatedNotification(
+                savedTicket.getUser().getId(),
+                savedTicket.getId(),
+                savedTicket.getPriority() == null ? null : savedTicket.getPriority().name()
+            );
+
         return toResponse(savedTicket, requesterUserId, requesterRole);
     }
 

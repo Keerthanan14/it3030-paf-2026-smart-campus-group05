@@ -5,7 +5,6 @@ export default function StudentNotificationsPage() {
     <NotificationInbox
       title="Student Notifications"
       description="Stay updated with booking alerts, ticket updates, and comments on your incident reports."
-      pageSize={10}
     />
   );
 }

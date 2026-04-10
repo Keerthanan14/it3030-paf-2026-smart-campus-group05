@@ -20,7 +20,7 @@ export function useTicketAuditLogs(options: UseTicketAuditLogsOptions = {}) {
     entityType: options.defaultEntityType,
   });
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
+  const [size, setSize] = useState(5);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [items, setItems] = useState<AuditLogItem[]>([]);

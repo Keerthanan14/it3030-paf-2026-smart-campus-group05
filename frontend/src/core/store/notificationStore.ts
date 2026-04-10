@@ -22,7 +22,7 @@ export const useNotificationStore = create<NotificationStoreState>((set) => ({
 	error: null,
 	hasLoaded: false,
 
-	loadRecentNotifications: async (size = 10, unreadOnly = false) => {
+	loadRecentNotifications: async (size = 5, unreadOnly = false) => {
 		set({ isLoading: true, error: null });
 
 		try {

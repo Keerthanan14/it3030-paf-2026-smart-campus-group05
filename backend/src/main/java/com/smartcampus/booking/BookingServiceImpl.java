@@ -41,8 +41,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -191,6 +189,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus(BookingStatus.PENDING);
 
         Booking savedBooking = bookingRepository.save(booking);
+        notificationService.sendBookingCreatedNotification(savedBooking.getUser().getId(), savedBooking.getId());
         return toResponse(savedBooking);
     }
 
@@ -237,15 +236,9 @@ public class BookingServiceImpl implements BookingService {
 
         Booking saved = bookingRepository.save(booking);
 
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    bookingQrGenerationService.generateApprovedBookingQr(saved.getId());
-                }
-            });
-        } else {
-            bookingQrGenerationService.generateApprovedBookingQr(saved.getId());
+        String qrCodeUrl = bookingQrGenerationService.generateApprovedBookingQr(saved.getId());
+        if (qrCodeUrl != null) {
+            saved.setQrCodeUrl(qrCodeUrl);
         }
 
         logBookingStatusChange(
@@ -268,7 +261,7 @@ public class BookingServiceImpl implements BookingService {
                 saved.getStartTime(),
                 saved.getEndTime(),
                 saved.getId().toString(),
-                saved.getQrCodeUrl(),
+                qrCodeUrl,
                 baseUrl
             );
         } catch (Exception e) {
@@ -353,6 +346,8 @@ public class BookingServiceImpl implements BookingService {
                 previousStatus,
                 saved.getStatus()
         );
+
+        notificationService.sendBookingCancelledNotification(saved.getUser().getId(), saved.getId());
 
         return toResponse(saved);
     }

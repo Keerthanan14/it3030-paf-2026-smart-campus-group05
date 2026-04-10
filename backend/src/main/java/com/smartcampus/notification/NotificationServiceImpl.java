@@ -91,6 +91,18 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
+    public void sendBookingCreatedNotification(UUID userId, UUID bookingId) {
+        createAndPushNotification(
+                userId,
+                bookingId,
+                ReferenceType.BOOKING,
+                NotificationType.BOOKING_CREATED,
+                "Your booking was created and is pending approval."
+        );
+    }
+
+    @Override
+    @Transactional
     public void sendBookingNotification(UUID userId, UUID bookingId, boolean approved, String reason) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
@@ -120,6 +132,37 @@ public class NotificationServiceImpl implements NotificationService {
         notification = notificationRepository.save(notification);
         pushToWebSocket(notification);
         emailService.sendEmail(user.getEmail(), subject, textBody);
+    }
+
+    @Override
+    @Transactional
+    public void sendBookingCancelledNotification(UUID userId, UUID bookingId) {
+        createAndPushNotification(
+                userId,
+                bookingId,
+                ReferenceType.BOOKING,
+                NotificationType.BOOKING_CANCELLED,
+                "Your approved booking has been cancelled."
+        );
+    }
+
+    @Override
+    @Transactional
+    public void sendTicketCreatedNotification(UUID userId, UUID ticketId, String priority) {
+        String normalizedPriority = priority == null ? "UNKNOWN" : priority.trim().toUpperCase();
+        String message = "Your ticket was created with priority " + normalizedPriority + ".";
+
+        if ("CRITICAL".equals(normalizedPriority)) {
+            message = "Your CRITICAL ticket was created and marked for urgent attention.";
+        }
+
+        createAndPushNotification(
+                userId,
+                ticketId,
+                ReferenceType.TICKET,
+                NotificationType.TICKET_CREATED,
+                message
+        );
     }
 
     @Override
@@ -160,6 +203,26 @@ public class NotificationServiceImpl implements NotificationService {
 
         notification = notificationRepository.save(notification);
         pushToWebSocket(notification);
+    }
+
+    private void createAndPushNotification(UUID userId,
+                                           UUID referenceId,
+                                           ReferenceType referenceType,
+                                           NotificationType notificationType,
+                                           String message) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        Notification notification = new Notification();
+        notification.setUser(user);
+        notification.setReferenceId(referenceId);
+        notification.setReferenceType(referenceType);
+        notification.setType(notificationType);
+        notification.setMessage(message);
+        notification.setRead(false);
+
+        Notification saved = notificationRepository.save(notification);
+        pushToWebSocket(saved);
     }
     
     private void pushToWebSocket(Notification notification) {

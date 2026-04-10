@@ -27,7 +27,7 @@ export function useAdminUsersManagement() {
   
   const pagination = usePagination({
     initialPage: 0,
-    initialPageSize: 10,
+    initialPageSize: 5,
     totalItems: 0,
   });
 

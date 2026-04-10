@@ -13,6 +13,7 @@ import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import AdminResourcesPage from './pages/admin/AdminResourcesPage';
 import AdminTicketsPage from './pages/admin/AdminTicketsPage';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
+import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage';
 import StudentDashboardPage from './pages/student/StudentDashboardPage';
 import StudentBookingsPage from './pages/student/StudentBookingsPage';
 import StudentResourcesPage from './pages/student/StudentResourcesPage';
@@ -56,6 +57,7 @@ function App() {
               <Route path="/admin/resources/:id/view/calendar" element={<AdminResourcesPage />} />
               <Route path="/admin/bookings" element={<AdminBookingsPage />} />
               <Route path="/admin/tickets" element={<AdminTicketsPage />} />
+              <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
             </Route>
 
             <Route element={<StudentRoute />}>

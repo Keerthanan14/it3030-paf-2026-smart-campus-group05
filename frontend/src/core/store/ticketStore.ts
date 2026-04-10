@@ -23,7 +23,7 @@ const defaultFilters: TicketFilters = {};
 export const useTicketStore = create<TicketStoreState>((set) => ({
 	filters: defaultFilters,
 	page: 0,
-	size: 10,
+	size: 5,
 	totalPages: 0,
 	totalElements: 0,
 	selectedTicketId: null,
@@ -74,7 +74,7 @@ export const useTicketStore = create<TicketStoreState>((set) => ({
 	resetPagination: () =>
 		set({
 			page: 0,
-			size: 10,
+			size: 5,
 			totalPages: 0,
 			totalElements: 0,
 		}),

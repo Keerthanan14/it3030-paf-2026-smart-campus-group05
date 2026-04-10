@@ -15,11 +15,16 @@ interface NotificationBellProps {
 function getNotificationIcon(notification: NotificationItem) {
   const iconClass = 'h-4 w-4';
 
-  if (notification.type === 'BOOKING_APPROVED' || notification.type === 'BOOKING_REJECTED') {
+  if (
+    notification.type === 'BOOKING_CREATED' ||
+    notification.type === 'BOOKING_APPROVED' ||
+    notification.type === 'BOOKING_REJECTED' ||
+    notification.type === 'BOOKING_CANCELLED'
+  ) {
     return <CalendarClock className={iconClass} />;
   }
 
-  if (notification.type === 'TICKET_STATUS_CHANGE') {
+  if (notification.type === 'TICKET_CREATED' || notification.type === 'TICKET_STATUS_CHANGE') {
     return <Ticket className={iconClass} />;
   }
 

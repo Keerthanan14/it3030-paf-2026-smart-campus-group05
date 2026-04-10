@@ -38,7 +38,7 @@ const appendImagesPart = (formData: FormData, images: File[]): void => {
 };
 
 export const ticketApi = {
-	listTickets({ page = 0, size = 10, filters = {} }: ListTicketsParams = {}) {
+	listTickets({ page = 0, size = 5, filters = {} }: ListTicketsParams = {}) {
 		return api.get<PaginatedTicketsResponse>("/tickets", {
 			params: {
 				page,

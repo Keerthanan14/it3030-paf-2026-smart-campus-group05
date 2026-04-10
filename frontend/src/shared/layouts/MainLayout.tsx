@@ -45,7 +45,6 @@ export function MainLayout() {
       );
     } else if (role === 'student' || role === 'staff') {
       nav.push(
-        { name: 'Resources', href: '/student/resources', icon: Home },
         { name: 'My Bookings', href: '/student/booking', icon: Calendar },
         { name: 'My Tickets', href: '/student/tickets', icon: Ticket },
         { name: 'Notifications', href: '/student/notifications', icon: Bell },

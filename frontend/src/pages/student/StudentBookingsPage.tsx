@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Button } from '../../shared/components/ui/Button';
 import { StickyPageHeader } from '../../shared/components/ui/StickyPageHeader';
 import { BookingCreateModal } from '../../features/booking/components/BookingCreateModal';
@@ -47,6 +48,7 @@ export default function StudentBookingsPage() {
     closeBookingDetail,
     canSubmit,
     refreshList,
+    refreshSelectedBooking,
     onCreateBooking,
     onSelectBooking,
     onCancelBooking,
@@ -64,6 +66,20 @@ export default function StudentBookingsPage() {
     setIsCreateModalOpen(false);
     resetCreateForm();
   };
+
+  useEffect(() => {
+    if (!selectedBooking || selectedBooking.qrCodeUrl) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      void refreshSelectedBooking();
+    }, 10000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [selectedBooking, refreshSelectedBooking]);
 
   return (
     <div className="space-y-6">

@@ -266,7 +266,9 @@ export function BookingDetailPanel({ selectedBooking, isDetailLoading, resources
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-border/60 bg-white/50 p-8 text-center text-sm text-foreground/60">
-                  QR code will appear after the booking is created.
+                  {selectedBooking.status === 'APPROVED'
+                    ? 'QR code is being generated. Refresh this booking in a moment if it does not appear yet.'
+                    : 'QR code will appear after the booking is approved.'}
                 </div>
               )}
             </div>

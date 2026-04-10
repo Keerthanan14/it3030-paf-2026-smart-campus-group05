@@ -70,7 +70,7 @@ export const useBookingStore = create<BookingStoreState>((set, get) => ({
 	selectedBooking: null,
 	filters: defaultFilters,
 	page: 0,
-	size: 10,
+	size: 5,
 	totalPages: 0,
 	totalElements: 0,
 	isListLoading: false,

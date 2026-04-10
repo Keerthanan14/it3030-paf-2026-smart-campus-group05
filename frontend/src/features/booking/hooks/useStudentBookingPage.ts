@@ -63,6 +63,7 @@ interface UseStudentBookingPageResult {
   selectedResourceLabel: string | null;
   canSubmit: boolean;
   refreshList: () => Promise<void>;
+  refreshSelectedBooking: () => Promise<void>;
   onCreateBooking: () => Promise<void>;
   onSelectBooking: (id: string) => Promise<void>;
   onCancelBooking: (id: string) => Promise<void>;
@@ -428,6 +429,15 @@ export function useStudentBookingPage(): UseStudentBookingPageResult {
     await fetchBookings();
   };
 
+  const refreshSelectedBooking = async (): Promise<void> => {
+    const bookingId = useBookingStore.getState().selectedBooking?.id;
+    if (!bookingId) {
+      return;
+    }
+
+    await fetchBookingById(bookingId);
+  };
+
   const formatResourceQueryLabel = (resource: ResourceItem): string =>
     resource.type === 'EQUIPMENT' ? resource.name : `${resource.name} ${formatResourceType(resource.type)}`;
 
@@ -618,6 +628,7 @@ export function useStudentBookingPage(): UseStudentBookingPageResult {
     selectedResourceLabel,
     canSubmit,
     refreshList,
+    refreshSelectedBooking,
     onCreateBooking,
     onSelectBooking,
     onCancelBooking,

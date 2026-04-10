@@ -35,7 +35,7 @@ function toResourceItem(payload: MaybeHateoasModel<ResourceItem>): ResourceItem 
 }
 
 export const resourceApi = {
-	async listResources({ page = 0, size = 10, filters = {} }: ListParams) {
+	async listResources({ page = 0, size = 5, filters = {} }: ListParams) {
 		const response = await api.get<
 			PaginatedResourceResponse & {
 				_embedded?: { resources?: Array<MaybeHateoasModel<ResourceItem>> };

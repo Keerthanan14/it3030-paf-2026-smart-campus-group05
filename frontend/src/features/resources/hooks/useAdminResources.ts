@@ -15,7 +15,7 @@ export function useAdminResources({ enabled = true }: UseAdminResourcesOptions =
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [filters, setFilters] = useState<ResourceFilters>(defaultFilters);
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
+  const [size, setSize] = useState(5);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(false);

@@ -33,7 +33,7 @@ const clamp = (value: number, min: number, max: number): number => {
  */
 export function usePagination(options: UsePaginationOptions = {}): UsePaginationResult {
 	const initialPage = options.initialPage ?? 0;
-	const initialPageSize = options.initialPageSize ?? 10;
+	const initialPageSize = options.initialPageSize ?? 5;
 	const [page, setPageState] = useState<number>(Math.max(0, initialPage));
 	const [pageSize, setPageSizeState] = useState<number>(Math.max(1, initialPageSize));
 	const [totalItems, setTotalItemsState] = useState<number>(Math.max(0, options.totalItems ?? 0));
