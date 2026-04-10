@@ -2,6 +2,7 @@ package com.smartcampus.resource.dto;
 
 import com.smartcampus.resource.AvailabilityWindow;
 import com.smartcampus.resource.ResourceType;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -15,7 +16,7 @@ public record CreateResourceRequest(
         @NotNull ResourceType type,
         @Min(0) Integer capacity,
         @NotBlank String building,
-        @NotNull @Min(0) @Max(5) Integer floor,
+        @Min(0) @Max(5) Integer floor,
         @NotNull @Min(0) Integer chairCount,
         @NotNull @Min(0) Integer tableCount,
         @NotNull Boolean hasAc,
@@ -39,4 +40,12 @@ public record CreateResourceRequest(
         Boolean allowBookings,
         Boolean allowRequests
 ) {
+        @AssertTrue(message = "floor is required for non-equipment resources")
+        public boolean isFloorValidForType() {
+                if (type == null) {
+                        return true;
+                }
+
+                return type == ResourceType.EQUIPMENT || floor != null;
+        }
 }

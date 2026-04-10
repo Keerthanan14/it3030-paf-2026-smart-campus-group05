@@ -53,9 +53,13 @@ export function ResourceTable({ items, loading, canManage = true, onToggleStatus
   };
 
   const formatLocationLabel = (item: ResourceItem) => {
-    if (item.building && item.floor !== undefined) {
+    if (item.building && item.floor !== undefined && item.floor !== null) {
       const buildingLabel = item.building === 'MAIN' ? 'Main Building' : 'Sub Building';
       return `${buildingLabel} ${formatFloorLabel(item.floor)}`;
+    }
+
+    if (item.building) {
+      return item.building === 'MAIN' ? 'Main Building' : 'Sub Building';
     }
 
     const locationMatch = item.location.match(/^(MAIN|SUB)\s*-\s*Floor\s*(\d+)$/i);
@@ -84,7 +88,6 @@ export function ResourceTable({ items, loading, canManage = true, onToggleStatus
             <th className="px-4 py-3 font-semibold">Type</th>
             <th className="px-4 py-3 font-semibold">Location</th>
             <th className="px-4 py-3 font-semibold">Booking</th>
-            <th className="px-4 py-3 font-semibold">Request</th>
             <th className="px-4 py-3 font-semibold">Status</th>
             <th className="px-4 py-3 font-semibold">Actions</th>
           </tr>
@@ -98,7 +101,6 @@ export function ResourceTable({ items, loading, canManage = true, onToggleStatus
                 <td className="px-4 py-3">{item.type}</td>
                 <td className="px-4 py-3">{formatLocationLabel(item)}</td>
                 <td className="px-4 py-3">{item.allowBookings ? 'Yes' : 'No'}</td>
-                <td className="px-4 py-3">{item.allowRequests ? 'Yes' : 'No'}</td>
                 <td className="px-4 py-3">
                   <span
                     className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${

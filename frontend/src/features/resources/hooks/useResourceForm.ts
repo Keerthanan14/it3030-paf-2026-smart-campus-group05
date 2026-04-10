@@ -71,7 +71,7 @@ export function useResourceForm(id?: string) {
           type: data.type,
           capacity: data.capacity,
           building: data.building ?? 'MAIN',
-          floor: data.floor ?? 1,
+          floor: data.type === 'EQUIPMENT' ? null : (data.floor ?? 1),
           chairCount: data.chairCount ?? 0,
           tableCount: data.tableCount ?? 0,
           hasAc: data.hasAc ?? false,
@@ -93,7 +93,7 @@ export function useResourceForm(id?: string) {
           description: data.description ?? '',
           status: data.status,
           allowBookings: data.allowBookings ?? true,
-          allowRequests: data.allowRequests ?? true,
+          allowRequests: false,
           availabilityWindows: data.availabilityWindows ?? buildDefaultWindows(),
         });
       } catch (err) {
@@ -145,7 +145,7 @@ export function useResourceForm(id?: string) {
         return false;
       }
 
-      if (values.floor === '') {
+      if (values.type !== 'EQUIPMENT' && (values.floor === '' || values.floor === null)) {
         setError('Please select a floor');
         return false;
       }
@@ -155,7 +155,7 @@ export function useResourceForm(id?: string) {
         type: values.type as ResourceType,
         capacity: Number(values.capacity),
         building: values.building as BuildingType,
-        floor: Number(values.floor),
+        floor: values.type === 'EQUIPMENT' ? null : Number(values.floor),
         chairCount: Number(values.chairCount),
         tableCount: Number(values.tableCount),
         hasAc: Boolean(values.hasAc),
@@ -177,7 +177,7 @@ export function useResourceForm(id?: string) {
         description: values.description,
         availabilityWindows: values.availabilityWindows,
         allowBookings: Boolean(values.allowBookings),
-        allowRequests: Boolean(values.allowRequests),
+        allowRequests: false,
         ...(isEdit ? { status: values.status as ResourceStatus } : {}),
       };
 

@@ -29,7 +29,8 @@ export function BookingAttendeesField({
   const totalCount = isEquipment
     ? Math.max(1, selectedResource?.equipmentCount ?? selectedResource?.capacity ?? 1)
     : Math.max(1, selectedResource?.capacity ?? STUDY_AREA_MAX_SELECTION);
-  const maxSelectable = selectedResource ? Math.min(hardMax, Math.max(0, availableSpace ?? totalCount)) : 0;
+  const remainingCount = Math.max(0, availableSpace ?? totalCount);
+  const maxSelectable = selectedResource ? Math.min(hardMax, remainingCount) : 0;
   const optionValues = Array.from({ length: maxSelectable }, (_, index) => index + 1);
 
   return (
@@ -53,7 +54,7 @@ export function BookingAttendeesField({
       {selectedResource ? (
         <div className="mt-1 flex items-center justify-between text-xs text-foreground/70">
           <span>{isEquipment ? 'count limit' : 'capacity'}: {totalCount}</span>
-          <span>{isEquipment ? 'available count' : 'available space'}: {availableSpace ?? maxSelectable}</span>
+          <span>{isEquipment ? 'available count' : 'available space'}: {remainingCount}</span>
         </div>
       ) : null}
     </div>

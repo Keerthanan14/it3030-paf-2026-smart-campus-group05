@@ -61,7 +61,7 @@ export interface ResourceFormValues {
 	type: ResourceType | '';
 	capacity: number;
 	building: BuildingType | '';
-	floor: number | '';
+	floor: number | '' | null;
 	chairCount: number;
 	tableCount: number;
 	hasAc: boolean;

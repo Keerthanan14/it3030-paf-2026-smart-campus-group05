@@ -171,7 +171,13 @@ export function ResourceForm({
               <select
                 className="h-10 w-full rounded-md border border-border/70 bg-background px-3 text-sm"
                 value={values.type}
-                onChange={(e) => onFieldChange('type', e.target.value as ResourceFormValues['type'])}
+                onChange={(e) => {
+                  const nextType = e.target.value as ResourceFormValues['type'];
+                  onFieldChange('type', nextType);
+                  if (nextType === 'EQUIPMENT') {
+                    onFieldChange('floor', null);
+                  }
+                }}
               >
                 <option value="">Select Type</option>
                 <option value="LECTURE_HALL">LECTURE HALL</option>
@@ -187,23 +193,25 @@ export function ResourceForm({
               </select>
             </label>
 
-            <label className="grid grid-cols-[130px_minmax(0,1fr)] items-center gap-3">
-              <span className="text-sm font-medium">Floor</span>
-              <div className="flex h-10 flex-wrap items-center gap-3 px-1 text-sm">
-                {[0, 1, 2, 3, 4, 5].map((floor) => (
-                  <label key={floor} className="inline-flex items-center gap-1.5">
-                    <input
-                      type="radio"
-                      name="floor"
-                      value={floor}
-                      checked={values.floor === floor}
-                      onChange={() => onFieldChange('floor', floor as ResourceFormValues['floor'])}
-                    />
-                    <span>{floor}</span>
-                  </label>
-                ))}
-              </div>
-            </label>
+            {values.type !== 'EQUIPMENT' ? (
+              <label className="grid grid-cols-[130px_minmax(0,1fr)] items-center gap-3">
+                <span className="text-sm font-medium">Floor</span>
+                <div className="flex h-10 flex-wrap items-center gap-3 px-1 text-sm">
+                  {[0, 1, 2, 3, 4, 5].map((floor) => (
+                    <label key={floor} className="inline-flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        name="floor"
+                        value={floor}
+                        checked={values.floor === floor}
+                        onChange={() => onFieldChange('floor', floor as ResourceFormValues['floor'])}
+                      />
+                      <span>{floor}</span>
+                    </label>
+                  ))}
+                </div>
+              </label>
+            ) : null}
 
             <label className="grid grid-cols-[130px_minmax(0,1fr)] items-center gap-3">
               <span className="text-sm font-medium">Name</span>
@@ -471,24 +479,6 @@ export function ResourceForm({
                   }}
                 />
                 <span className="text-sm font-medium">Allow Bookings</span>
-              </label>
-
-              {/* Row 3: Request Checkbox */}
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4"
-                  checked={Boolean(values.allowRequests)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      onFieldChange('allowRequests', true);
-                      onFieldChange('allowBookings', false);
-                    } else {
-                      onFieldChange('allowRequests', false);
-                    }
-                  }}
-                />
-                <span className="text-sm font-medium">Allow Requests</span>
               </label>
             </div>
           </div>

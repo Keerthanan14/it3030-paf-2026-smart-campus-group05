@@ -133,7 +133,7 @@ public class Resource {
         if (building == null) {
             building = "MAIN";
         }
-        if (floor == null) {
+        if (floor == null && type != ResourceType.EQUIPMENT) {
             floor = 1;
         }
         if (chairCount == null) {

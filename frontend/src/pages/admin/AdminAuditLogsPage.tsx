@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTicketAuditLogs } from '../../features/ticket/hooks/useTicketAuditLogs';
 import { StickyPageHeader } from '../../shared/components/ui/StickyPageHeader';
 import { Card } from '../../shared/components/ui/Card';
@@ -13,6 +14,7 @@ type AuditFilterDraft = {
 };
 
 export default function AdminAuditLogsPage() {
+  const navigate = useNavigate();
   const {
     items,
     loading,
@@ -62,6 +64,11 @@ export default function AdminAuditLogsPage() {
       <StickyPageHeader
         title="Admin Audit Logs"
         description="View all audit events with filters and pagination."
+        action={
+          <Button type="button" variant="outline" onClick={() => navigate('/admin/dashboard')}>
+            Back to Dashboard
+          </Button>
+        }
       />
 
       <Card className="p-5 space-y-4">

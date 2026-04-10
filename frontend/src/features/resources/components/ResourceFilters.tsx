@@ -12,7 +12,6 @@ export function ResourceFilters({ initialFilters, onApply }: ResourceFiltersProp
   const [type, setType] = useState<ResourceType | ''>(initialFilters.type ?? '');
   const [status, setStatus] = useState<ResourceStatus | ''>(initialFilters.status ?? '');
   const [allowBookings, setAllowBookings] = useState(Boolean(initialFilters.allowBookings));
-  const [allowRequests, setAllowRequests] = useState(Boolean(initialFilters.allowRequests));
 
   useEffect(() => {
     setKeyword(initialFilters.keyword);
@@ -20,7 +19,6 @@ export function ResourceFilters({ initialFilters, onApply }: ResourceFiltersProp
     setType(initialFilters.type ?? '');
     setStatus(initialFilters.status ?? '');
     setAllowBookings(Boolean(initialFilters.allowBookings));
-    setAllowRequests(Boolean(initialFilters.allowRequests));
   }, [initialFilters]);
 
   useEffect(() => {
@@ -31,16 +29,15 @@ export function ResourceFilters({ initialFilters, onApply }: ResourceFiltersProp
         type: type || undefined,
         status: status || undefined,
         allowBookings: allowBookings ? true : undefined,
-        allowRequests: allowRequests ? true : undefined,
       });
     }, 250);
 
     return () => window.clearTimeout(timeoutId);
-  }, [keyword, location, type, status, allowBookings, allowRequests, onApply]);
+  }, [keyword, location, type, status, allowBookings, onApply]);
 
   return (
     <div className="rounded-lg border border-border/60 bg-card p-4">
-      <div className="grid gap-3 lg:grid-cols-[minmax(280px,1.8fr)_minmax(180px,1fr)_minmax(180px,0.9fr)_max-content_max-content_max-content] lg:items-center">
+      <div className="grid gap-3 lg:grid-cols-[minmax(280px,1.8fr)_minmax(180px,1fr)_minmax(180px,0.9fr)_max-content_max-content] lg:items-center">
         <input
           className="h-10 rounded-md border border-border/70 bg-background px-3 text-sm"
           placeholder="Search by name or description"
@@ -96,15 +93,6 @@ export function ResourceFilters({ initialFilters, onApply }: ResourceFiltersProp
             onChange={(e) => setAllowBookings(e.target.checked)}
           />
           <span>Booking</span>
-        </label>
-
-        <label className="inline-flex h-10 items-center gap-2 text-sm justify-self-start">
-          <input
-            type="checkbox"
-            checked={allowRequests}
-            onChange={(e) => setAllowRequests(e.target.checked)}
-          />
-          <span>Request</span>
         </label>
       </div>
 

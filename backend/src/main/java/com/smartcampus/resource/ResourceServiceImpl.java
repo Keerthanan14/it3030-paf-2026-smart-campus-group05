@@ -94,14 +94,15 @@ public class ResourceServiceImpl implements ResourceService {
     public ResourceResponse createResource(CreateResourceRequest request) {
         validateAvailabilityWindows(request.availabilityWindows());
         int normalizedCapacity = normalizeCapacity(request.type(), request.capacity());
+        Integer normalizedFloor = normalizeFloor(request.type(), request.floor());
 
         Resource resource = new Resource();
         resource.setName(request.name());
         resource.setType(request.type());
         resource.setCapacity(normalizedCapacity);
         resource.setBuilding(request.building());
-        resource.setFloor(request.floor());
-        resource.setLocation(formatLocation(request.building(), request.floor()));
+        resource.setFloor(normalizedFloor);
+        resource.setLocation(formatLocation(request.building(), normalizedFloor));
         resource.setChairCount(request.chairCount());
         resource.setTableCount(request.tableCount());
         resource.setPcCount(request.pcCount());
@@ -133,14 +134,15 @@ public class ResourceServiceImpl implements ResourceService {
     public ResourceResponse updateResource(UUID id, UpdateResourceRequest request) {
         validateAvailabilityWindows(request.availabilityWindows());
         int normalizedCapacity = normalizeCapacity(request.type(), request.capacity());
+        Integer normalizedFloor = normalizeFloor(request.type(), request.floor());
 
         Resource resource = getExistingResource(id);
         resource.setName(request.name());
         resource.setType(request.type());
         resource.setCapacity(normalizedCapacity);
         resource.setBuilding(request.building());
-        resource.setFloor(request.floor());
-        resource.setLocation(formatLocation(request.building(), request.floor()));
+        resource.setFloor(normalizedFloor);
+        resource.setLocation(formatLocation(request.building(), normalizedFloor));
         resource.setChairCount(request.chairCount());
         resource.setTableCount(request.tableCount());
         resource.setPcCount(request.pcCount());
@@ -319,6 +321,14 @@ public class ResourceServiceImpl implements ResourceService {
         }
 
         return capacity;
+    }
+
+    private Integer normalizeFloor(ResourceType type, Integer floor) {
+        if (type == ResourceType.EQUIPMENT) {
+            return null;
+        }
+
+        return floor;
     }
 
     private ResourceResponse toResponse(Resource resource) {
