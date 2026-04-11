@@ -47,9 +47,9 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(new HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/oauth2/**", "/login/oauth2/**", "/error", "/actuator/health", "/ws/**").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/refresh", "/api/auth/register/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/audit-logs").hasRole("ADMIN")
+                        .requestMatchers("/api/audit-logs").hasAnyRole("ADMIN", "TECHNICIAN")
                         .requestMatchers("/api/bookings/*/approve", "/api/bookings/*/reject", "/api/bookings/export/**").hasRole("ADMIN")
                         .requestMatchers("/api/tickets/*/assign").hasRole("ADMIN")
                         .requestMatchers("/api/tickets/*/status").hasAnyRole("ADMIN", "TECHNICIAN")

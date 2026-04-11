@@ -1,14 +1,26 @@
 import { Wrench, TicketCheck, AlertTriangle, Timer } from "lucide-react";
 import { Card } from "../../../shared/components/ui/Card";
 
-const stats = [
-  { label: "Assigned Tickets", value: "14", icon: Wrench },
-  { label: "Open Now", value: "6", icon: AlertTriangle },
-  { label: "Resolved Today", value: "4", icon: TicketCheck },
-  { label: "Avg. Response Time", value: "42m", icon: Timer },
-];
+type TechnicianDashboardStatsProps = {
+  assignedTickets: number;
+  openNow: number;
+  resolvedToday: number;
+  avgResponseTimeLabel: string;
+};
 
-export function TechnicianDashboardStats() {
+export function TechnicianDashboardStats({
+  assignedTickets,
+  openNow,
+  resolvedToday,
+  avgResponseTimeLabel,
+}: TechnicianDashboardStatsProps) {
+  const stats = [
+    { label: "Assigned Tickets", value: String(assignedTickets), icon: Wrench },
+    { label: "Open Now", value: String(openNow), icon: AlertTriangle },
+    { label: "Resolved Today", value: String(resolvedToday), icon: TicketCheck },
+    { label: "Avg. Response Time", value: avgResponseTimeLabel, icon: Timer },
+  ];
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map((item) => (

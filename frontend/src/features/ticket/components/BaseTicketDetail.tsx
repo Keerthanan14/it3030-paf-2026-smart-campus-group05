@@ -80,7 +80,7 @@ type BaseTicketDetailProps = {
   emptyMessage: string;
   ticket: Ticket | null;
   showChat?: boolean;
-  contentActionsPosition?: "before" | "after";
+  contentActionsPosition?: "before" | "beforeStatus" | "after";
   detailLoading: boolean;
   detailError: string | null;
   actionError?: string | null;
@@ -263,9 +263,12 @@ export function BaseTicketDetail({
                   <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-foreground/60">Ticket Summary</p>
                   <p className="text-xs text-foreground/80">Review the selected ticket details</p>
                 </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${getStatusBadgeClass(ticket.status)}`}>
-                  {ticket.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  {contentActionsPosition === "beforeStatus" && contentActions ? contentActions : null}
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${getStatusBadgeClass(ticket.status)}`}>
+                    {ticket.status}
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-2.5 text-xs">

@@ -55,6 +55,20 @@ export function TechnicianTicketDetail({
 }: TechnicianTicketDetailProps) {
   const [deleteTargetCommentId, setDeleteTargetCommentId] = useState<string | null>(null);
 
+  const getNextStatus = (status?: TicketStatus): TicketStatus | null => {
+    if (status === "OPEN") return "IN_PROGRESS";
+    if (status === "IN_PROGRESS") return "RESOLVED";
+    return null;
+  };
+
+  const getNextStatusLabel = (status: TicketStatus): string => {
+    if (status === "IN_PROGRESS") return "Mark In Progress";
+    if (status === "RESOLVED") return "Mark Resolved";
+    return "Update Status";
+  };
+
+  const nextStatus = getNextStatus(ticket?.status);
+
   const metaFields = [
     { label: "Category", value: ticket?.category ?? "-" },
     { label: "Status", value: ticket?.status ?? "-" },
@@ -70,15 +84,18 @@ export function TechnicianTicketDetail({
 
   const contentActions = (
     <div className="flex flex-wrap gap-2">
-      <Button type="button" size="sm" variant="outline" onClick={() => onStatusUpdate("IN_PROGRESS")} isLoading={actionLoading} disabled={!canUpdateStatus}>
-        Mark In Progress
-      </Button>
-      <Button type="button" size="sm" variant="outline" onClick={() => onStatusUpdate("RESOLVED")} isLoading={actionLoading} disabled={!canUpdateStatus}>
-        Mark Resolved
-      </Button>
-      <Button type="button" size="sm" variant="outline" onClick={() => onStatusUpdate("CLOSED")} isLoading={actionLoading} disabled={!canUpdateStatus}>
-        Mark Closed
-      </Button>
+      {nextStatus ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => onStatusUpdate(nextStatus)}
+          isLoading={actionLoading}
+          disabled={!canUpdateStatus}
+        >
+          {getNextStatusLabel(nextStatus)}
+        </Button>
+      ) : null}
     </div>
   );
 
@@ -87,6 +104,7 @@ export function TechnicianTicketDetail({
       title="Ticket Detail"
       emptyMessage="Select a ticket to inspect and update status."
       ticket={ticket}
+      contentActionsPosition="beforeStatus"
       detailLoading={detailLoading}
       detailError={detailError}
       actionError={actionError}

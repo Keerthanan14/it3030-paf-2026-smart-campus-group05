@@ -8,7 +8,7 @@ import useTicketComments from "./useTicketComments";
 import useTicketDetail from "./useTicketDetail";
 import useTicketsList from "./useTicketsList";
 import { getApiErrorMessage } from "../utils/ticketUi";
-import type { TicketPriority, TicketStatus } from "../../../types/ticket";
+import type { TicketPriority, TicketStatus, UpdateTicketStatusRequest } from "../../../types/ticket";
 import type { UserListItem } from "../../../types/user";
 
 export type AdminTicketsPageLogic = {
@@ -144,11 +144,29 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
     },
   });
 
+  const buildStatusUpdatePayload = (nextStatus: TicketStatus): UpdateTicketStatusRequest => {
+    if (nextStatus === "RESOLVED") {
+      return {
+        status: nextStatus,
+        resolutionNotes: "Resolved by admin",
+      };
+    }
+
+    if (nextStatus === "REJECTED") {
+      return {
+        status: nextStatus,
+        rejectionReason: "Rejected by admin",
+      };
+    }
+
+    return { status: nextStatus };
+  };
+
   const handleStatusUpdate = async (nextStatus: TicketStatus): Promise<void> => {
     if (!ticket) return;
 
     try {
-      await updateStatus(ticket.id, { status: nextStatus });
+      await updateStatus(ticket.id, buildStatusUpdatePayload(nextStatus));
       toast.success("Status updated", `Ticket is now ${nextStatus}.`);
       await Promise.all([refresh(), refreshDetail()]);
     } catch (error) {
@@ -208,7 +226,7 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
     if (!ticketId) return;
 
     try {
-      await updateStatus(ticketId, { status: "REJECTED" });
+      await updateStatus(ticketId, buildStatusUpdatePayload("REJECTED"));
       toast.success("Status updated", "Ticket is now REJECTED.");
       await refresh();
       if (ticket?.id === ticketId) {

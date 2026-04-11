@@ -195,7 +195,7 @@ public class NotificationServiceImpl implements NotificationService {
                 technicianId,
                 ticketId,
                 ReferenceType.TICKET,
-                NotificationType.TICKET_ASSIGNED,
+                NotificationType.TICKET_STATUS_CHANGE,
                 "A ticket has been assigned to you."
         );
     }

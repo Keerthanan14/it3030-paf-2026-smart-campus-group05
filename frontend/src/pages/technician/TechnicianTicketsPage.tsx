@@ -43,6 +43,8 @@ export default function TechnicianTicketsPage() {
           onSelectTicket={detail.setSelectedTicketId}
           onSetPage={list.setPage}
           onSetSize={list.setSize}
+          onAdvanceStatus={actions.handleStatusUpdateById}
+          rowStatusLoadingTicketId={actions.rowStatusLoadingTicketId}
         />
       </Card>
 

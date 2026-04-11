@@ -1,12 +1,16 @@
 import { Card } from "../../../shared/components/ui/Card";
 
-const timelineItems = [
-  { ticketId: "#TK-1042", status: "Within SLA", statusClass: "text-success" },
-  { ticketId: "#TK-1039", status: "Due in 40m", statusClass: "text-warning" },
-  { ticketId: "#TK-1031", status: "Over SLA", statusClass: "text-error" },
-];
+export type TechnicianSlaTimelineItem = {
+  ticketId: string;
+  status: string;
+  statusClass: string;
+};
 
-export function TechnicianSlaTimeline() {
+type TechnicianSlaTimelineProps = {
+  timelineItems: TechnicianSlaTimelineItem[];
+};
+
+export function TechnicianSlaTimeline({ timelineItems }: TechnicianSlaTimelineProps) {
   return (
     <Card className="p-5">
       <h2 className="text-lg font-semibold">SLA Timeline</h2>
@@ -17,6 +21,7 @@ export function TechnicianSlaTimeline() {
             <span className={item.statusClass}>{item.status}</span>
           </li>
         ))}
+        {timelineItems.length === 0 ? <li className="rounded-md bg-muted/30 p-3 text-foreground/60">No SLA timeline items yet.</li> : null}
       </ul>
     </Card>
   );

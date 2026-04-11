@@ -7,7 +7,7 @@ import useTicketComments from "./useTicketComments";
 import useTicketDetail from "./useTicketDetail";
 import useTicketsList from "./useTicketsList";
 import { getApiErrorMessage } from "../utils/ticketUi";
-import type { TicketStatus } from "../../../types/ticket";
+import type { TicketStatus, UpdateTicketStatusRequest } from "../../../types/ticket";
 
 export type TechnicianTicketsPageLogic = {
   meta: {
@@ -50,7 +50,9 @@ export type TechnicianTicketsPageLogic = {
   actions: {
     loading: ReturnType<typeof useTicketActions>["loading"];
     error: ReturnType<typeof useTicketActions>["error"];
+    rowStatusLoadingTicketId: string | null;
     handleStatusUpdate: (nextStatus: TicketStatus) => Promise<void>;
+    handleStatusUpdateById: (ticketId: string, nextStatus: TicketStatus) => Promise<void>;
     handleAddComment: () => Promise<void>;
     saveEditedComment: () => Promise<void>;
     removeComment: (commentId: string) => Promise<void>;
@@ -82,6 +84,7 @@ export function useTechnicianTicketsPageLogic(): TechnicianTicketsPageLogic {
   const [commentDraft, setCommentDraft] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentValue, setEditingCommentValue] = useState("");
+  const [rowStatusLoadingTicketId, setRowStatusLoadingTicketId] = useState<string | null>(null);
 
   const {
     comments,
@@ -104,15 +107,39 @@ export function useTechnicianTicketsPageLogic(): TechnicianTicketsPageLogic {
     },
   });
 
+  const buildStatusUpdatePayload = (nextStatus: TicketStatus): UpdateTicketStatusRequest => {
+    if (nextStatus === "RESOLVED") {
+      return {
+        status: nextStatus,
+        resolutionNotes: "Resolved by technician",
+      };
+    }
+
+    return { status: nextStatus };
+  };
+
   const handleStatusUpdate = async (nextStatus: TicketStatus): Promise<void> => {
     if (!ticket) return;
 
     try {
-      await updateStatus(ticket.id, { status: nextStatus });
+      await updateStatus(ticket.id, buildStatusUpdatePayload(nextStatus));
       toast.success("Status updated", `Ticket is now ${nextStatus}.`);
       await Promise.all([refresh(), refreshDetail()]);
     } catch (error) {
       toast.error("Status update failed", getApiErrorMessage(error, "Try again."));
+    }
+  };
+
+  const handleStatusUpdateById = async (ticketId: string, nextStatus: TicketStatus): Promise<void> => {
+    setRowStatusLoadingTicketId(ticketId);
+    try {
+      await updateStatus(ticketId, buildStatusUpdatePayload(nextStatus));
+      toast.success("Status updated", `Ticket is now ${nextStatus}.`);
+      await Promise.all([refresh(), refreshDetail()]);
+    } catch (error) {
+      toast.error("Status update failed", getApiErrorMessage(error, "Try again."));
+    } finally {
+      setRowStatusLoadingTicketId(null);
     }
   };
 
@@ -206,7 +233,9 @@ export function useTechnicianTicketsPageLogic(): TechnicianTicketsPageLogic {
     actions: {
       loading: actionLoading,
       error: actionError,
+      rowStatusLoadingTicketId,
       handleStatusUpdate,
+      handleStatusUpdateById,
       handleAddComment,
       saveEditedComment,
       removeComment,

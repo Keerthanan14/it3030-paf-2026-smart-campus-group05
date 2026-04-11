@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -94,12 +95,14 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String refreshToken = jwtTokenProvider.generateRefreshToken(userId);
 
         // Put the refresh token into an HttpOnly cookie
-        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("refresh_token", refreshToken);
-        cookie.setHttpOnly(true);
-        // cookie.setSecure(true); // Uncomment this in production when using HTTPS
-        cookie.setPath("/api/auth/refresh");
-        cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
-        response.addCookie(cookie);
+        ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
+            .httpOnly(true)
+            .secure(request.isSecure())
+            .sameSite("Lax")
+            .path("/api/auth/refresh")
+            .maxAge(7 * 24 * 60 * 60)
+            .build();
+        response.addHeader("Set-Cookie", refreshCookie.toString());
 
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
                 .queryParam("token", token)
