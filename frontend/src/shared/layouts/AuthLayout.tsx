@@ -32,10 +32,8 @@ export function AuthLayout() {
                 Manage academics, resources, bookings, tickets, and notifications in one smart platform.
               </p>
 
-              <div className="mt-10 grid gap-5 md:grid-cols-2 md:grid-rows-2">
-                <div className="auth-feature-card auth-feature-card-tall md:row-span-2" />
-
-                <div className="auth-feature-card md:col-start-2 md:row-start-1">
+              <div className="mt-10 grid gap-5 md:grid-cols-2">
+                <div className="auth-feature-card">
                   <div className="mb-2 flex items-center gap-2">
                     <CalendarCheck2 className="h-5 w-5 text-primary" />
                     <p className="text-lg font-semibold text-foreground">Booking Resources</p>
@@ -43,7 +41,7 @@ export function AuthLayout() {
                   <p className="mt-1 text-sm text-foreground/70">Reserve labs, halls, and campus facilities quickly with real-time availability.</p>
                 </div>
 
-                <div className="auth-feature-card md:col-start-2 md:row-start-2">
+                <div className="auth-feature-card">
                   <div className="mb-2 flex items-center gap-2">
                     <Ticket className="h-5 w-5 text-primary" />
                     <p className="text-lg font-semibold text-foreground">Ticket Raising</p>

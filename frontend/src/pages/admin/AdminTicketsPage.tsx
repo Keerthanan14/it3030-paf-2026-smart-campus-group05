@@ -25,12 +25,9 @@ export default function AdminTicketsPage() {
           status={list.status}
           priority={list.priority}
           assignedToFilter={list.assignedToFilter}
-          loading={list.loading}
           onStatusChange={list.setStatus}
           onPriorityChange={list.setPriority}
           onAssignedToFilterChange={list.setAssignedToFilter}
-          onApplyAssignedFilter={list.applyAssignedFilter}
-          onRefresh={() => void list.refresh()}
         />
 
         {list.error ? <p className="text-sm text-rose-600">{list.error}</p> : null}
@@ -42,7 +39,11 @@ export default function AdminTicketsPage() {
           size={list.size}
           totalPages={list.totalPages}
           totalElements={list.totalElements}
+          technicians={detail.technicians}
+          actionLoading={actions.loading}
           onSelectTicket={detail.setSelectedTicketId}
+          onAssignTicket={(ticketId, technicianInput) => void actions.handleAssignForTicket(ticketId, technicianInput)}
+          onRejectTicket={(ticketId) => void actions.handleRejectForTicket(ticketId)}
           onSetPage={list.setPage}
           onSetSize={list.setSize}
         />
@@ -52,7 +53,7 @@ export default function AdminTicketsPage() {
         isOpen={Boolean(detail.ticket)}
         onClose={closeTicketDetail}
         title="Ticket Summary"
-        className="max-w-3xl p-4 sm:p-6"
+        className="max-w-152 p-4 sm:p-6"
       >
         <AdminTicketDetail
           ticket={detail.ticket}
@@ -66,6 +67,7 @@ export default function AdminTicketsPage() {
           canUpdateStatus={detail.canUpdateStatus}
           canAddComment={detail.canAddComment}
           technicianId={detail.technicianId}
+          technicians={detail.technicians}
           comments={comments.items}
           commentDraft={comments.draft}
           editingCommentId={comments.editingCommentId}

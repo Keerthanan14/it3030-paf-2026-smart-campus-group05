@@ -81,14 +81,6 @@ export function NotificationInbox({
   };
 
   const recentNotifications = notifications.slice(0, 3);
-  const typeSummary = notifications.reduce<Record<string, number>>((accumulator, notification) => {
-    const type = notification.type.replaceAll('_', ' ');
-    accumulator[type] = (accumulator[type] ?? 0) + 1;
-    return accumulator;
-  }, {});
-  const topTypes = Object.entries(typeSummary)
-    .sort((first, second) => second[1] - first[1])
-    .slice(0, 4);
 
   return (
     <div className="space-y-6">
@@ -250,24 +242,6 @@ export function NotificationInbox({
               ) : (
                 <p className="rounded-2xl border border-dashed border-border/60 p-4 text-sm text-foreground/60">
                   New notifications will appear here.
-                </p>
-              )}
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-foreground/55">Top types</p>
-            <div className="mt-4 space-y-2">
-              {topTypes.length > 0 ? (
-                topTypes.map(([type, count]) => (
-                  <div key={type} className="flex items-center justify-between rounded-2xl bg-muted/50 px-4 py-3 text-sm">
-                    <span className="font-medium text-foreground">{type}</span>
-                    <span className="rounded-full bg-background px-2.5 py-0.5 text-xs font-semibold text-foreground/70">{count}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="rounded-2xl border border-dashed border-border/60 p-4 text-sm text-foreground/60">
-                  No notification types yet.
                 </p>
               )}
             </div>

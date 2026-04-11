@@ -9,7 +9,6 @@ import OAuthCallbackPage from './pages/auth/OAuthCallbackPage.tsx';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminNotificationsPage from './pages/admin/AdminNotificationsPage';
-import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import AdminResourcesPage from './pages/admin/AdminResourcesPage';
 import AdminTicketsPage from './pages/admin/AdminTicketsPage';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
@@ -20,7 +19,6 @@ import StudentResourcesPage from './pages/student/StudentResourcesPage';
 import StudentNotificationsPage from './pages/student/StudentNotificationsPage';
 import TechnicianDashboardPage from './pages/technician/TechnicianDashboardPage';
 import TechnicianTicketsPage from './pages/technician/TechnicianTicketsPage';
-import StudentSettingsPage from './pages/student/StudentSettingsPage';
 import StudentTicketsPage from './pages/student/StudentTicketsPage';
 import BookingScanResultPage from './pages/BookingScanResultPage';
 import { AdminRoute, ProtectedRoute, StudentRoute, TechnicianRoute } from './routes/RouteGuards.tsx';
@@ -49,7 +47,6 @@ function App() {
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
-              <Route path="/admin/settings" element={<AdminSettingsPage />} />
               <Route path="/admin/resources" element={<AdminResourcesPage />} />
               <Route path="/admin/resources/new" element={<AdminResourcesPage />} />
               <Route path="/admin/resources/:id/edit" element={<AdminResourcesPage />} />
@@ -66,7 +63,6 @@ function App() {
               <Route path="/student/booking" element={<StudentBookingsPage />} />
               <Route path="/booking" element={<Navigate to="/student/booking" replace />} />
               <Route path="/student/notifications" element={<StudentNotificationsPage />} />
-              <Route path="/student/settings" element={<StudentSettingsPage />} />
               <Route path="/student/tickets" element={<StudentTicketsPage />} />
               <Route path="/ticket" element={<Navigate to="/student/tickets" replace />} />
             </Route>

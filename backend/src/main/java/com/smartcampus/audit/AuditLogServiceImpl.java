@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Service
 public class AuditLogServiceImpl implements AuditLogService {
@@ -52,6 +53,8 @@ public class AuditLogServiceImpl implements AuditLogService {
     public PaginatedAuditLogResponse getAuditLogs(String entityType,
                                                   String action,
                                                   UUID userId,
+                                                  LocalDateTime from,
+                                                  LocalDateTime to,
                                                   int page,
                                                   int size) {
         if (page < 0) {
@@ -63,7 +66,9 @@ public class AuditLogServiceImpl implements AuditLogService {
 
         Specification<AuditLog> spec = Specification.where(AuditLogSpecifications.hasEntityType(entityType))
                 .and(AuditLogSpecifications.hasAction(action))
-                .and(AuditLogSpecifications.hasUserId(userId));
+            .and(AuditLogSpecifications.hasUserId(userId))
+            .and(AuditLogSpecifications.createdAtFrom(from))
+            .and(AuditLogSpecifications.createdAtTo(to));
 
         Page<AuditLogResponse> result = auditLogRepository
                 .findAll(spec, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))

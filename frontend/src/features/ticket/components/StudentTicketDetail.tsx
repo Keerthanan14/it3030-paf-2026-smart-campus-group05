@@ -65,6 +65,7 @@ export function StudentTicketDetail({
       title="Ticket Detail"
       emptyMessage="Select a ticket to view full details."
       ticket={ticket}
+      showChat={Boolean(ticket?.assignedToId)}
       detailLoading={detailLoading}
       detailError={detailError}
       commentError={commentError}

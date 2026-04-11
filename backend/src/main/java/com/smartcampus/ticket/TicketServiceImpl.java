@@ -189,12 +189,6 @@ public class TicketServiceImpl implements TicketService {
             )
         );
 
-            notificationService.sendTicketCreatedNotification(
-                savedTicket.getUser().getId(),
-                savedTicket.getId(),
-                savedTicket.getPriority() == null ? null : savedTicket.getPriority().name()
-            );
-
             notificationService.sendTicketCreatedNotificationToAdmins(
                 savedTicket.getId(),
                 savedTicket.getPriority() == null ? null : savedTicket.getPriority().name(),
@@ -293,6 +287,10 @@ public class TicketServiceImpl implements TicketService {
         UUID previousAssignedTo = ticket.getAssignedTo() == null ? null : ticket.getAssignedTo().getId();
         ticket.setAssignedTo(technician);
 
+        if (ticket.getFirstResponseAt() == null) {
+            ticket.setFirstResponseAt(LocalDateTime.now());
+        }
+
         Ticket saved = ticketRepository.save(ticket);
 
         auditLogService.logAction(
@@ -303,6 +301,8 @@ public class TicketServiceImpl implements TicketService {
             Map.of("assignedTo", previousAssignedTo == null ? "UNASSIGNED" : previousAssignedTo.toString()),
             Map.of("assignedTo", saved.getAssignedTo().getId().toString())
         );
+
+        notificationService.sendTicketAssignedNotification(saved.getAssignedTo().getId(), saved.getId());
 
         return toResponse(saved, requesterUserId, requesterRole);
     }

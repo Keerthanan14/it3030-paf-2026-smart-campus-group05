@@ -1,4 +1,5 @@
 import { Card } from "../../shared/components/ui/Card";
+import { Modal } from "../../shared/components/ui/Modal";
 import { StickyPageHeader } from "../../shared/components/ui/StickyPageHeader";
 import TechnicianTicketFilters from "../../features/ticket/components/TechnicianTicketFilters";
 import TechnicianTicketTable from "../../features/ticket/components/TechnicianTicketTable";
@@ -8,11 +9,15 @@ import useTechnicianTicketsPageLogic from "../../features/ticket/hooks/useTechni
 export default function TechnicianTicketsPage() {
   const { meta, list, detail, comments, actions } = useTechnicianTicketsPageLogic();
 
+  const closeTicketDetail = (): void => {
+    detail.setSelectedTicketId(null);
+  };
+
   return (
     <div className="space-y-6">
       <StickyPageHeader
-        title="Assigned Tickets"
-        description="Focus on your assigned incidents and resolve them within SLA."
+        title="Ticket Management"
+        description="Review your assigned incidents and resolve them within SLA."
       />
 
       <Card className="space-y-4 p-5">
@@ -41,7 +46,12 @@ export default function TechnicianTicketsPage() {
         />
       </Card>
 
-      <Card className="space-y-4 p-5">
+      <Modal
+        isOpen={Boolean(detail.ticket)}
+        onClose={closeTicketDetail}
+        title="Ticket Summary"
+        className="max-w-6xl p-4 sm:p-6"
+      >
         <TechnicianTicketDetail
           ticket={detail.ticket}
           detailLoading={detail.loading}
@@ -74,7 +84,7 @@ export default function TechnicianTicketsPage() {
             void actions.removeComment(commentId);
           }}
         />
-      </Card>
+      </Modal>
     </div>
   );
 }

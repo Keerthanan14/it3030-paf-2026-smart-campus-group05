@@ -190,6 +190,18 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
+    public void sendTicketAssignedNotification(UUID technicianId, UUID ticketId) {
+        createAndPushNotification(
+                technicianId,
+                ticketId,
+                ReferenceType.TICKET,
+                NotificationType.TICKET_ASSIGNED,
+                "A ticket has been assigned to you."
+        );
+    }
+
+    @Override
+    @Transactional
     public void sendTicketStatusNotification(UUID userId, UUID ticketId, String status) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));

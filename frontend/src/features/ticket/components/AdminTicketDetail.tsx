@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../../../shared/components/ui/Button";
-import { Input } from "../../../shared/components/ui/Input";
 import { Pencil, Trash2 } from "lucide-react";
 import type { Ticket, TicketComment, TicketStatus } from "../../../types/ticket";
+import type { UserListItem } from "../../../types/user";
 import BaseTicketDetail from "./BaseTicketDetail";
 
 type AdminTicketDetailProps = {
@@ -17,6 +17,7 @@ type AdminTicketDetailProps = {
   canUpdateStatus: boolean;
   canAddComment: boolean;
   technicianId: string;
+  technicians: UserListItem[];
   comments: TicketComment[];
   commentDraft: string;
   editingCommentId: string | null;
@@ -46,6 +47,7 @@ export function AdminTicketDetail({
   canUpdateStatus,
   canAddComment,
   technicianId,
+  technicians,
   comments,
   commentDraft,
   editingCommentId,
@@ -63,6 +65,9 @@ export function AdminTicketDetail({
   onRemoveComment,
 }: AdminTicketDetailProps) {
   const [deleteTargetCommentId, setDeleteTargetCommentId] = useState<string | null>(null);
+  const [technicianSearch, setTechnicianSearch] = useState("");
+  const [isTechnicianMenuOpen, setIsTechnicianMenuOpen] = useState(false);
+  const technicianPickerRef = useRef<HTMLDivElement | null>(null);
 
   const metaFields = [
     { label: "Category", value: ticket?.category ?? "-" },
@@ -77,38 +82,117 @@ export function AdminTicketDetail({
     setDeleteTargetCommentId(null);
   };
 
-  const contentActions = (
+  const selectedTechnician = useMemo(
+    () => technicians.find((technician) => technician.id === technicianId) ?? null,
+    [technicians, technicianId]
+  );
+
+  const filteredTechnicians = useMemo(() => {
+    const term = technicianSearch.trim().toLowerCase();
+    if (!term) return technicians;
+
+    return technicians.filter((technician) => {
+      const name = technician.name.toLowerCase();
+      const email = technician.email.toLowerCase();
+      const id = technician.id.toLowerCase();
+      return name.includes(term) || email.includes(term) || id.includes(term);
+    });
+  }, [technicians, technicianSearch]);
+
+  const showAssignmentActions = !ticket?.assignedToId;
+
+  const selectTechnician = (technician: UserListItem): void => {
+    onTechnicianIdChange(technician.id);
+    setTechnicianSearch(`${technician.name} · ${technician.email}`);
+    setIsTechnicianMenuOpen(false);
+  };
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent): void => {
+      if (!technicianPickerRef.current) return;
+      if (!technicianPickerRef.current.contains(event.target as Node)) {
+        setIsTechnicianMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const contentActions = showAssignmentActions ? (
     <>
-      <div className="grid gap-2 md:grid-cols-[1fr_auto]">
-        <Input
-          label="Assign Technician ID"
-          value={technicianId}
-          onChange={(e) => onTechnicianIdChange(e.target.value)}
-          placeholder="Paste technician user id"
-        />
+      <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
+        <div ref={technicianPickerRef} className="relative">
+          <label className="mb-1 block text-sm font-medium">Assign Technician</label>
+          <div className="flex items-stretch">
+            <input
+              type="text"
+              value={technicianSearch}
+              onFocus={() => setIsTechnicianMenuOpen(true)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setTechnicianSearch(value);
+                setIsTechnicianMenuOpen(true);
+
+                const selectedLabel = selectedTechnician ? `${selectedTechnician.name} · ${selectedTechnician.email}` : "";
+                if (technicianId && value !== selectedLabel) {
+                  onTechnicianIdChange("");
+                }
+              }}
+              placeholder="Search and select a technician"
+              className="h-10 w-full rounded-l-md rounded-r-none border border-border bg-background px-3 text-xs text-foreground ring-1 ring-inset ring-transparent focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <Button
+              type="button"
+              onClick={onAssign}
+              isLoading={actionLoading}
+              disabled={!technicianId.trim() || !canAssign}
+              className="h-10 rounded-l-none border-l-0"
+            >
+              Assign
+            </Button>
+          </div>
+
+          {isTechnicianMenuOpen ? (
+            <div className="absolute z-20 mt-2 w-full rounded-md border border-border/70 bg-background p-2 shadow-lg">
+              <div className="max-h-56 overflow-y-auto">
+                {filteredTechnicians.length > 0 ? (
+                  <div className="space-y-1">
+                    {filteredTechnicians.map((technician) => (
+                      <button
+                        key={technician.id}
+                        type="button"
+                        className={`w-full rounded-md px-3 py-2 text-left text-xs hover:bg-muted ${technicianId === technician.id ? "bg-muted" : ""}`}
+                        onClick={() => selectTechnician(technician)}
+                      >
+                        <div className="font-medium">{technician.name}</div>
+                        <div className="text-xs text-foreground/60">{technician.email}</div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="px-3 py-2 text-sm text-foreground/60">No technicians found.</p>
+                )}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
         <div className="flex items-end">
-          <Button type="button" onClick={onAssign} isLoading={actionLoading} disabled={!technicianId.trim() || !canAssign}>
-            Assign
+          <Button
+            type="button"
+            variant="danger"
+            onClick={() => onStatusUpdate("REJECTED")}
+            isLoading={actionLoading}
+            disabled={!canUpdateStatus}
+            className="min-w-24 whitespace-nowrap"
+          >
+            Reject
           </Button>
         </div>
       </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" size="sm" variant="outline" onClick={() => onStatusUpdate("IN_PROGRESS")} isLoading={actionLoading} disabled={!canUpdateStatus}>
-          Mark In Progress
-        </Button>
-        <Button type="button" size="sm" variant="outline" onClick={() => onStatusUpdate("RESOLVED")} isLoading={actionLoading} disabled={!canUpdateStatus}>
-          Mark Resolved
-        </Button>
-        <Button type="button" size="sm" variant="outline" onClick={() => onStatusUpdate("CLOSED")} isLoading={actionLoading} disabled={!canUpdateStatus}>
-          Mark Closed
-        </Button>
-        <Button type="button" size="sm" variant="outline" onClick={() => onStatusUpdate("REJECTED")} isLoading={actionLoading} disabled={!canUpdateStatus}>
-          Reject
-        </Button>
-      </div>
     </>
-  );
+  ) : null;
 
   return (
     <BaseTicketDetail
@@ -116,6 +200,7 @@ export function AdminTicketDetail({
       emptyMessage="Select a ticket to manage assignment and status."
       ticket={ticket}
       showChat={false}
+      contentActionsPosition="before"
       detailLoading={detailLoading}
       detailError={detailError}
       actionError={actionError}

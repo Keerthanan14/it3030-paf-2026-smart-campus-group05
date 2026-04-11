@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Calendar, LayoutDashboard, Ticket, Bell, Settings, Users } from 'lucide-react';
+import { Home, Calendar, LayoutDashboard, Ticket, Bell, Users } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '../../core/store/authStore';
 import { Navbar } from '../components/layout/Navbar';
@@ -40,15 +40,17 @@ export function MainLayout() {
         { name: 'Resources', href: '/admin/resources', icon: Home },
         { name: 'Bookings', href: '/admin/bookings', icon: Calendar },
         { name: 'Tickets', href: '/admin/tickets', icon: Ticket },
-        { name: 'Notifications', href: '/admin/notifications', icon: Bell },
-        { name: 'System Settings', href: '/admin/settings', icon: Settings }
+        { name: 'Notifications', href: '/admin/notifications', icon: Bell }
       );
     } else if (role === 'student' || role === 'staff') {
       nav.push(
         { name: 'My Bookings', href: '/student/booking', icon: Calendar },
         { name: 'My Tickets', href: '/student/tickets', icon: Ticket },
-        { name: 'Notifications', href: '/student/notifications', icon: Bell },
-        { name: 'Settings', href: '/student/settings', icon: Settings }
+        { name: 'Notifications', href: '/student/notifications', icon: Bell }
+      );
+    } else if (role === 'technician') {
+      nav.push(
+        { name: 'Ticket Management', href: '/technician/tickets', icon: Ticket }
       );
     }
 

@@ -1,4 +1,3 @@
-import { Button } from "../../../shared/components/ui/Button";
 import { Input } from "../../../shared/components/ui/Input";
 import type { TicketPriority, TicketStatus } from "../../../types/ticket";
 
@@ -6,12 +5,9 @@ type AdminTicketFiltersProps = {
   status: TicketStatus | undefined;
   priority: TicketPriority | undefined;
   assignedToFilter: string;
-  loading: boolean;
   onStatusChange: (status: TicketStatus | undefined) => void;
   onPriorityChange: (priority: TicketPriority | undefined) => void;
   onAssignedToFilterChange: (value: string) => void;
-  onApplyAssignedFilter: () => void;
-  onRefresh: () => void;
 };
 
 const statusOptions: TicketStatus[] = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED", "REJECTED"];
@@ -21,15 +17,12 @@ export function AdminTicketFilters({
   status,
   priority,
   assignedToFilter,
-  loading,
   onStatusChange,
   onPriorityChange,
   onAssignedToFilterChange,
-  onApplyAssignedFilter,
-  onRefresh,
 }: AdminTicketFiltersProps) {
   return (
-    <div className="grid gap-3 md:grid-cols-4">
+    <div className="grid gap-3 md:grid-cols-3">
       <div>
         <label className="mb-1 block text-sm font-medium">Status</label>
         <select
@@ -63,20 +56,11 @@ export function AdminTicketFilters({
       </div>
 
       <Input
-        label="Assigned To (ID)"
+        label="Assigned To"
         value={assignedToFilter}
         onChange={(e) => onAssignedToFilterChange(e.target.value)}
-        placeholder="technician user id"
+        placeholder="Search name or email"
       />
-
-      <div className="flex items-end gap-2">
-        <Button type="button" variant="outline" onClick={onApplyAssignedFilter}>
-          Apply
-        </Button>
-        <Button type="button" variant="outline" onClick={onRefresh} isLoading={loading}>
-          Refresh
-        </Button>
-      </div>
     </div>
   );
 }

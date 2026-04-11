@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTicketAuditLogs } from '../../features/ticket/hooks/useTicketAuditLogs';
 import { useTicketAutoRefresh } from '../../features/ticket/hooks/useTicketAutoRefresh';
@@ -12,7 +12,17 @@ type AuditFilterDraft = {
   entityType: string;
   action: string;
   actorQuery: string;
+  fromDate: string;
+  toDate: string;
 };
+
+function toStartOfDayIso(dateValue: string): string | undefined {
+  return dateValue ? `${dateValue}T00:00:00` : undefined;
+}
+
+function toEndOfDayIso(dateValue: string): string | undefined {
+  return dateValue ? `${dateValue}T23:59:59` : undefined;
+}
 
 export default function AdminAuditLogsPage() {
   const navigate = useNavigate();
@@ -30,6 +40,8 @@ export default function AdminAuditLogsPage() {
     refresh,
   } = useTicketAuditLogs();
 
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+
   useTicketAutoRefresh({
     enabled: true,
     intervalMs: 15000,
@@ -40,16 +52,24 @@ export default function AdminAuditLogsPage() {
     entityType: '',
     action: '',
     actorQuery: '',
+    fromDate: '',
+    toDate: '',
   });
+
+  const toggleExpanded = (id: string): void => {
+    setExpandedIds((current) => ({ ...current, [id]: !current[id] }));
+  };
 
   const onChangeDraft = (key: keyof AuditFilterDraft, value: string) => {
     setDraftFilters((current) => {
       const next = { ...current, [key]: value };
 
-      if (key === 'entityType' || key === 'action') {
+      if (key === 'entityType' || key === 'action' || key === 'fromDate' || key === 'toDate') {
         applyFilters({
           entityType: next.entityType.trim() || undefined,
           action: next.action.trim() || undefined,
+          from: toStartOfDayIso(next.fromDate),
+          to: toEndOfDayIso(next.toDate),
         });
       }
 
@@ -80,7 +100,7 @@ export default function AdminAuditLogsPage() {
       />
 
       <Card className="p-5 space-y-4">
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-5">
           <Input
             label="Entity Type"
             placeholder="BOOKING, TICKET, RESOURCE"
@@ -99,6 +119,18 @@ export default function AdminAuditLogsPage() {
             value={draftFilters.actorQuery}
             onChange={(event) => onChangeDraft('actorQuery', event.target.value)}
           />
+          <Input
+            label="From"
+            type="date"
+            value={draftFilters.fromDate}
+            onChange={(event) => onChangeDraft('fromDate', event.target.value)}
+          />
+          <Input
+            label="To"
+            type="date"
+            value={draftFilters.toDate}
+            onChange={(event) => onChangeDraft('toDate', event.target.value)}
+          />
         </div>
 
         {error ? <p className="text-sm text-error">{error}</p> : null}
@@ -106,6 +138,7 @@ export default function AdminAuditLogsPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead />
               <TableHead>Action</TableHead>
               <TableHead>Entity</TableHead>
               <TableHead>Entity ID</TableHead>
@@ -115,13 +148,40 @@ export default function AdminAuditLogsPage() {
           </TableHeader>
           <TableBody>
             {visibleItems.map((log) => (
-              <TableRow key={log.id}>
+              <Fragment key={log.id}>
+              <TableRow>
+                <TableCell>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => toggleExpanded(log.id)}>
+                    {expandedIds[log.id] ? 'Hide' : 'View'}
+                  </Button>
+                </TableCell>
                 <TableCell className="font-medium">{log.action}</TableCell>
                 <TableCell>{log.entityType}</TableCell>
                 <TableCell className="max-w-65 truncate" title={log.entityId}>{log.entityId}</TableCell>
                 <TableCell>{log.userName ?? log.userEmail ?? 'System'}</TableCell>
                 <TableCell>{new Date(log.createdAt).toLocaleString()}</TableCell>
               </TableRow>
+              {expandedIds[log.id] ? (
+                <TableRow>
+                  <TableCell colSpan={6}>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="rounded-md border border-border/70 bg-muted/20 p-3">
+                        <p className="mb-2 text-sm font-semibold">Old Value</p>
+                        <pre className="max-h-60 overflow-auto whitespace-pre-wrap text-xs text-foreground/80">
+                          {log.oldValue ? JSON.stringify(log.oldValue, null, 2) : 'No previous value'}
+                        </pre>
+                      </div>
+                      <div className="rounded-md border border-border/70 bg-muted/20 p-3">
+                        <p className="mb-2 text-sm font-semibold">New Value</p>
+                        <pre className="max-h-60 overflow-auto whitespace-pre-wrap text-xs text-foreground/80">
+                          {log.newValue ? JSON.stringify(log.newValue, null, 2) : 'No new value'}
+                        </pre>
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              </Fragment>
             ))}
             {visibleItems.length === 0 && !loading ? (
               <TableRow>

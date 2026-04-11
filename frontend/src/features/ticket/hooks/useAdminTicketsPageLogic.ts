@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { userApi } from "../../../core/api/userApi";
 import { useToast } from "../../../shared/components/ui/useToast";
 import { useAuthStore } from "../../../core/store/authStore";
 import useTicketActions from "./useTicketActions";
@@ -8,6 +9,7 @@ import useTicketDetail from "./useTicketDetail";
 import useTicketsList from "./useTicketsList";
 import { getApiErrorMessage } from "../utils/ticketUi";
 import type { TicketPriority, TicketStatus } from "../../../types/ticket";
+import type { UserListItem } from "../../../types/user";
 
 export type AdminTicketsPageLogic = {
   meta: {
@@ -29,7 +31,6 @@ export type AdminTicketsPageLogic = {
     setAssignedToFilter: (value: string) => void;
     setStatus: (status: TicketStatus | undefined) => void;
     setPriority: (priority: TicketPriority | undefined) => void;
-    applyAssignedFilter: () => void;
     refresh: ReturnType<typeof useTicketsList>["refresh"];
   };
   detail: {
@@ -39,6 +40,7 @@ export type AdminTicketsPageLogic = {
     setSelectedTicketId: ReturnType<typeof useTicketDetail>["setSelectedTicketId"];
     technicianId: string;
     setTechnicianId: (value: string) => void;
+    technicians: UserListItem[];
     canAssign: boolean;
     canUpdateStatus: boolean;
     canAddComment: boolean;
@@ -60,6 +62,8 @@ export type AdminTicketsPageLogic = {
     error: ReturnType<typeof useTicketActions>["error"];
     handleStatusUpdate: (status: TicketStatus) => Promise<void>;
     handleAssign: () => Promise<void>;
+    handleAssignForTicket: (ticketId: string, technicianInput: string) => Promise<void>;
+    handleRejectForTicket: (ticketId: string) => Promise<void>;
     handleAddComment: () => Promise<void>;
     saveEditedComment: () => Promise<void>;
     removeComment: (commentId: string) => Promise<void>;
@@ -87,6 +91,7 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
 
   const { loading: actionLoading, error: actionError, updateStatus, assignTechnician } = useTicketActions();
   const { ticket, loading: detailLoading, error: detailError, setSelectedTicketId, refresh: refreshDetail } = useTicketDetail();
+  const [technicians, setTechnicians] = useState<UserListItem[]>([]);
 
   const [assignedToFilter, setAssignedToFilter] = useState(filters.assignedTo ?? "");
   const [technicianId, setTechnicianId] = useState("");
@@ -107,6 +112,30 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
   useEffect(() => {
     setCommentList(ticket?.comments ?? []);
   }, [setCommentList, ticket]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTechnicians = async (): Promise<void> => {
+      try {
+        const { data } = await userApi.getAll();
+        if (!isMounted) return;
+
+        const technicianUsers = data.filter((user) => user.role === "TECHNICIAN" || user.role === "ROLE_TECHNICIAN");
+        setTechnicians(technicianUsers);
+      } catch {
+        if (isMounted) {
+          setTechnicians([]);
+        }
+      }
+    };
+
+    void loadTechnicians();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useTicketAutoRefresh({
     enabled: Boolean(ticket?.id),
@@ -137,6 +166,56 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
       await Promise.all([refresh(), refreshDetail()]);
     } catch (error) {
       toast.error("Assignment failed", getApiErrorMessage(error, "Check technician ID."));
+    }
+  };
+
+  const resolveTechnicianId = (technicianInput: string): string | null => {
+    const normalizedInput = technicianInput.trim().toLowerCase();
+    if (!normalizedInput) return null;
+
+    const matchedTechnician = technicians.find((technician) => {
+      return (
+        technician.id.toLowerCase() === normalizedInput ||
+        technician.name.toLowerCase() === normalizedInput ||
+        technician.email.toLowerCase() === normalizedInput ||
+        `${technician.name} (${technician.email})`.toLowerCase() === normalizedInput
+      );
+    });
+
+    return matchedTechnician?.id ?? null;
+  };
+
+  const handleAssignForTicket = async (ticketId: string, technicianInput: string): Promise<void> => {
+    const resolvedTechnicianId = resolveTechnicianId(technicianInput);
+    if (!ticketId || !resolvedTechnicianId) {
+      toast.error("Assignment failed", "Select a valid technician from the dropdown.");
+      return;
+    }
+
+    try {
+      await assignTechnician(ticketId, { technicianId: resolvedTechnicianId });
+      toast.success("Technician assigned");
+      await refresh();
+      if (ticket?.id === ticketId) {
+        await refreshDetail();
+      }
+    } catch (error) {
+      toast.error("Assignment failed", getApiErrorMessage(error, "Check technician selection."));
+    }
+  };
+
+  const handleRejectForTicket = async (ticketId: string): Promise<void> => {
+    if (!ticketId) return;
+
+    try {
+      await updateStatus(ticketId, { status: "REJECTED" });
+      toast.success("Status updated", "Ticket is now REJECTED.");
+      await refresh();
+      if (ticket?.id === ticketId) {
+        await refreshDetail();
+      }
+    } catch (error) {
+      toast.error("Status update failed", getApiErrorMessage(error, "Try again."));
     }
   };
 
@@ -190,12 +269,30 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
   const canUpdateStatus = Boolean(ticket?.links?.updateStatus);
   const canAddComment = Boolean(ticket?.links?.addComment);
 
+  const assignedToSearchTerm = assignedToFilter.trim().toLowerCase();
+
+  const visibleTickets = useMemo(() => {
+    if (!assignedToSearchTerm) return tickets;
+
+    return tickets.filter((ticketItem) => {
+      const assignedName = (ticketItem.assignedToName ?? "").toLowerCase();
+      const assignedId = (ticketItem.assignedToId ?? "").toLowerCase();
+      const technicianEmail = technicians.find((technician) => technician.id === ticketItem.assignedToId)?.email.toLowerCase() ?? "";
+
+      return (
+        assignedName.includes(assignedToSearchTerm) ||
+        technicianEmail.includes(assignedToSearchTerm) ||
+        assignedId.includes(assignedToSearchTerm)
+      );
+    });
+  }, [tickets, technicians, assignedToSearchTerm]);
+
   return {
     meta: {
       currentUserId: currentUser?.id,
     },
     list: {
-      tickets,
+      tickets: visibleTickets,
       loading,
       error,
       status: filters.status as TicketStatus | undefined,
@@ -204,13 +301,12 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
       page,
       size,
       totalPages,
-      totalElements,
+      totalElements: assignedToSearchTerm ? visibleTickets.length : totalElements,
       setPage,
       setSize,
       setAssignedToFilter,
       setStatus: (status) => updateFilters({ status }),
       setPriority: (priority) => updateFilters({ priority }),
-      applyAssignedFilter: () => updateFilters({ assignedTo: assignedToFilter.trim() || undefined }),
       refresh,
     },
     detail: {
@@ -220,6 +316,7 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
       setSelectedTicketId,
       technicianId,
       setTechnicianId,
+      technicians,
       canAssign,
       canUpdateStatus,
       canAddComment,
@@ -241,6 +338,8 @@ export function useAdminTicketsPageLogic(): AdminTicketsPageLogic {
       error: actionError,
       handleStatusUpdate,
       handleAssign,
+      handleAssignForTicket,
+      handleRejectForTicket,
       handleAddComment,
       saveEditedComment,
       removeComment,

@@ -24,7 +24,11 @@ function getNotificationIcon(notification: NotificationItem) {
     return <CalendarClock className={iconClass} />;
   }
 
-  if (notification.type === 'TICKET_CREATED' || notification.type === 'TICKET_STATUS_CHANGE') {
+  if (
+    notification.type === 'TICKET_CREATED' ||
+    notification.type === 'TICKET_ASSIGNED' ||
+    notification.type === 'TICKET_STATUS_CHANGE'
+  ) {
     return <Ticket className={iconClass} />;
   }
 

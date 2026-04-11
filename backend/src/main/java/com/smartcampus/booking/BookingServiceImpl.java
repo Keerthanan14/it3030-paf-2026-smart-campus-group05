@@ -7,11 +7,18 @@ import com.smartcampus.booking.dto.PaginatedBookingResponse;
 import com.smartcampus.booking.dto.RejectBookingRequest;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.colors.Color;
+import com.itextpdf.kernel.colors.DeviceRgb;
+import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Div;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.UnitValue;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.layout.properties.VerticalAlignment;
 import com.smartcampus.exception.BookingBadRequestException;
 import com.smartcampus.exception.BookingConflictException;
 import com.smartcampus.exception.BookingForbiddenException;
@@ -394,17 +401,78 @@ public class BookingServiceImpl implements BookingService {
             PdfDocument pdf = new PdfDocument(writer);
             Document document = new Document(pdf);
 
+            document.setMargins(28, 28, 28, 28);
+
+            Color primary = new DeviceRgb(17, 24, 39);
+            Color accent = new DeviceRgb(37, 99, 235);
+            Color softBlue = new DeviceRgb(239, 246, 255);
+            Color softGray = new DeviceRgb(243, 244, 246);
+            Color borderColor = new DeviceRgb(209, 213, 219);
+            Color successBg = new DeviceRgb(220, 252, 231);
+            Color warningBg = new DeviceRgb(254, 243, 199);
+            Color dangerBg = new DeviceRgb(254, 226, 226);
+
             String rangeLabel = (from == null && to == null)
                     ? "All Dates"
                     : (from == null ? "Until " + to : (to == null ? "From " + from : from + " to " + to));
 
-            document.add(new Paragraph("Booking Report").setFontSize(16));
-            document.add(new Paragraph("Date Range: " + rangeLabel));
-            document.add(new Paragraph("Generated At: " + java.time.LocalDateTime.now()));
-            document.add(new Paragraph(" "));
+                Paragraph title = new Paragraph()
+                    .setFontSize(22)
+                    .setFontColor(primary)
+                    .setMarginBottom(2)
+                        .add("Booking Report");
+            Paragraph subtitle = new Paragraph("Admin export for managed booking records")
+                .setFontSize(10)
+                .setFontColor(new DeviceRgb(75, 85, 99))
+                .setMarginBottom(14);
 
-            Table table = new Table(UnitValue.createPercentArray(new float[]{1.3f, 1.4f, 1.4f, 1f, 0.8f, 0.8f, 1.6f, 0.8f, 1f, 1.6f}))
+            Div headerBlock = new Div()
+                .setBackgroundColor(softBlue)
+                .setBorder(new SolidBorder(accent, 1))
+                .setPadding(14)
+                .setMarginBottom(14);
+            headerBlock.add(title);
+            headerBlock.add(subtitle);
+
+            Table metadataTable = new Table(UnitValue.createPercentArray(new float[]{1f, 1f}))
+                .useAllAvailableWidth();
+            metadataTable.addCell(createMetaCell("Date Range", rangeLabel, softGray, borderColor));
+            metadataTable.addCell(createMetaCell("Generated At", java.time.LocalDateTime.now().toString(), softGray, borderColor));
+            metadataTable.setMarginBottom(14);
+
+            Table summaryTable = new Table(UnitValue.createPercentArray(new float[]{1f, 1f, 1f, 1f}))
+                .useAllAvailableWidth();
+            summaryTable.addCell(createSummaryCell("Total", String.valueOf(bookings.size()), softGray, borderColor, primary));
+            summaryTable.addCell(createSummaryCell(
+                "Approved",
+                String.valueOf(bookings.stream().filter(booking -> booking.getStatus() == BookingStatus.APPROVED).count()),
+                successBg,
+                borderColor,
+                new DeviceRgb(21, 128, 61)
+            ));
+            summaryTable.addCell(createSummaryCell(
+                "Pending",
+                String.valueOf(bookings.stream().filter(booking -> booking.getStatus() == BookingStatus.PENDING).count()),
+                warningBg,
+                borderColor,
+                new DeviceRgb(146, 64, 14)
+            ));
+            summaryTable.addCell(createSummaryCell(
+                "Rejected",
+                String.valueOf(bookings.stream().filter(booking -> booking.getStatus() == BookingStatus.REJECTED).count()),
+                dangerBg,
+                borderColor,
+                new DeviceRgb(153, 27, 27)
+            ));
+            summaryTable.setMarginBottom(16);
+
+            document.add(headerBlock);
+            document.add(metadataTable);
+            document.add(summaryTable);
+
+            Table table = new Table(UnitValue.createPercentArray(new float[]{1.15f, 1.3f, 1.3f, 0.95f, 0.75f, 0.75f, 1.6f, 0.8f, 0.95f, 1.4f}))
                     .useAllAvailableWidth();
+            table.setBorder(new SolidBorder(borderColor, 1));
 
             addPdfHeaderCell(table, "Booking ID");
             addPdfHeaderCell(table, "User");
@@ -417,22 +485,27 @@ public class BookingServiceImpl implements BookingService {
             addPdfHeaderCell(table, "Status");
             addPdfHeaderCell(table, "Rejection Reason");
 
+            boolean alternate = false;
             for (Booking booking : bookings) {
-                table.addCell(trimBookingId(booking.getId()));
-                table.addCell(booking.getUser().getName());
-                table.addCell(booking.getResource().getName());
-                table.addCell(String.valueOf(booking.getBookingDate()));
-                table.addCell(String.valueOf(booking.getStartTime()));
-                table.addCell(String.valueOf(booking.getEndTime()));
-                table.addCell(booking.getPurpose());
-                table.addCell(booking.getAttendeesCount() == null ? "-" : String.valueOf(booking.getAttendeesCount()));
-                table.addCell(booking.getStatus().name());
-                table.addCell(booking.getRejectionReason() == null ? "-" : booking.getRejectionReason());
+                Color rowBackground = alternate ? new DeviceRgb(249, 250, 251) : ColorConstants.WHITE;
+                table.addCell(createBodyCell(trimBookingId(booking.getId()), rowBackground, borderColor, TextAlignment.LEFT));
+                table.addCell(createBodyCell(booking.getUser().getName(), rowBackground, borderColor, TextAlignment.LEFT));
+                table.addCell(createBodyCell(booking.getResource().getName(), rowBackground, borderColor, TextAlignment.LEFT));
+                table.addCell(createBodyCell(String.valueOf(booking.getBookingDate()), rowBackground, borderColor, TextAlignment.CENTER));
+                table.addCell(createBodyCell(String.valueOf(booking.getStartTime()), rowBackground, borderColor, TextAlignment.CENTER));
+                table.addCell(createBodyCell(String.valueOf(booking.getEndTime()), rowBackground, borderColor, TextAlignment.CENTER));
+                table.addCell(createBodyCell(booking.getPurpose(), rowBackground, borderColor, TextAlignment.LEFT));
+                table.addCell(createBodyCell(booking.getAttendeesCount() == null ? "-" : String.valueOf(booking.getAttendeesCount()), rowBackground, borderColor, TextAlignment.CENTER));
+                table.addCell(createStatusCell(booking.getStatus().name(), rowBackground, borderColor, booking.getStatus()));
+                table.addCell(createBodyCell(booking.getRejectionReason() == null ? "-" : booking.getRejectionReason(), rowBackground, borderColor, TextAlignment.LEFT));
+                alternate = !alternate;
             }
 
             document.add(table);
-            document.add(new Paragraph(" "));
-            document.add(new Paragraph("Total bookings: " + bookings.size()));
+            document.add(new Paragraph(" ").setMarginBottom(2));
+            document.add(new Paragraph("Total bookings: " + bookings.size())
+                    .setFontSize(10)
+                    .setFontColor(new DeviceRgb(75, 85, 99)));
             document.close();
 
             return outputStream.toByteArray();
@@ -513,7 +586,74 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void addPdfHeaderCell(Table table, String value) {
-        table.addHeaderCell(new Cell().add(new Paragraph(value)));
+        table.addHeaderCell(new Cell()
+            .setBackgroundColor(new DeviceRgb(30, 41, 59))
+            .setFontColor(ColorConstants.WHITE)
+            .setBorder(new SolidBorder(new DeviceRgb(51, 65, 85), 0.8f))
+            .setPadding(8)
+            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                .add(new Paragraph().setFontSize(9.5f).add(value)));
+        }
+
+        private Cell createBodyCell(String value, Color backgroundColor, Color borderColor, TextAlignment alignment) {
+        return new Cell()
+            .setBackgroundColor(backgroundColor)
+            .setBorder(new SolidBorder(borderColor, 0.6f))
+            .setPadding(7)
+            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+            .setTextAlignment(alignment)
+            .add(new Paragraph(value).setFontSize(8.8f));
+        }
+
+        private Cell createStatusCell(String value, Color backgroundColor, Color borderColor, BookingStatus status) {
+        Color textColor = switch (status) {
+            case APPROVED -> new DeviceRgb(21, 128, 61);
+            case PENDING -> new DeviceRgb(146, 64, 14);
+            case REJECTED -> new DeviceRgb(153, 27, 27);
+            case CANCELLED -> new DeviceRgb(71, 85, 105);
+        };
+
+        return new Cell()
+            .setBackgroundColor(backgroundColor)
+            .setBorder(new SolidBorder(borderColor, 0.6f))
+            .setPadding(7)
+            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+            .setTextAlignment(TextAlignment.CENTER)
+            .add(new Paragraph()
+                .setFontSize(8.8f)
+                .setFontColor(textColor)
+                .add(value));
+        }
+
+        private Cell createMetaCell(String label, String value, Color backgroundColor, Color borderColor) {
+        return new Cell()
+            .setBackgroundColor(backgroundColor)
+            .setBorder(new SolidBorder(borderColor, 0.8f))
+            .setPadding(8)
+            .add(new Paragraph(label)
+                .setFontSize(8)
+                .setFontColor(new DeviceRgb(107, 114, 128))
+                .setMarginBottom(2))
+            .add(new Paragraph()
+                .setFontSize(10)
+                .setFontColor(new DeviceRgb(31, 41, 55))
+                .add(value));
+        }
+
+        private Cell createSummaryCell(String label, String value, Color backgroundColor, Color borderColor, Color valueColor) {
+        return new Cell()
+            .setBackgroundColor(backgroundColor)
+            .setBorder(new SolidBorder(borderColor, 0.8f))
+            .setPadding(10)
+            .setTextAlignment(TextAlignment.CENTER)
+            .add(new Paragraph(label)
+                .setFontSize(8)
+                .setFontColor(new DeviceRgb(107, 114, 128))
+                .setMarginBottom(2))
+            .add(new Paragraph()
+                .setFontSize(16)
+                .setFontColor(valueColor)
+                .add(value));
     }
 
     private String trimBookingId(UUID bookingId) {

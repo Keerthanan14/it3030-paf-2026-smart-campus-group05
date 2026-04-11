@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { Input } from "../../../shared/components/ui/Input";
 import { Button } from "../../../shared/components/ui/Button";
 import { MAX_TICKET_IMAGES } from "../utils/ticketUi";
@@ -79,6 +79,7 @@ export function StudentTicketCreateForm({
   onSubmit,
 }: StudentTicketCreateFormProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const selectedCategory = knownCategoryLabels.has(category) ? category : "Other";
 
   const toFileList = (files: File[]): FileList => {
@@ -125,6 +126,13 @@ export function StudentTicketCreateForm({
     }
 
     fileInputRef.current?.click();
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    handlePickerChange(event.dataTransfer.files);
   };
 
   const handlePickerChange = (fileList: FileList | null): void => {
@@ -214,7 +222,7 @@ export function StudentTicketCreateForm({
       <div>
         <label className="mb-1 block text-sm font-medium">Description</label>
         <textarea
-          className="min-h-[96px] w-full rounded-md border border-border/70 bg-background px-3 py-2 text-sm"
+          className="min-h-24 w-full rounded-md border border-border/70 bg-background px-3 py-2 text-sm"
           value={description}
           onChange={(e) => onDescriptionChange(e.target.value)}
           placeholder="Describe the issue clearly so technicians can respond fast"
@@ -230,7 +238,37 @@ export function StudentTicketCreateForm({
           accept="image/png,image/jpeg"
           onChange={(e) => handlePickerChange(e.target.files)}
         />
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+        <div
+          className={`rounded-lg border-2 border-dashed p-3 transition ${isDragging ? "border-primary bg-primary/5" : "border-border/80 bg-muted/10"}`}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragEnter={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={(event) => {
+            event.preventDefault();
+            if (event.currentTarget.contains(event.relatedTarget as Node)) return;
+            setIsDragging(false);
+          }}
+          onDrop={handleDrop}
+          onClick={openFilePicker}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openFilePicker();
+            }
+          }}
+        >
+          <p className="text-sm font-medium">Drag and drop images here, or click to browse</p>
+          <p className="mt-1 text-xs text-foreground/60">JPEG/PNG only, up to 3 files, max 5MB each</p>
+        </div>
+
+        <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
           {imagePreviews.map(({ file, url }, index) => (
             <div
               key={`${file.name}-${file.size}-${index}`}

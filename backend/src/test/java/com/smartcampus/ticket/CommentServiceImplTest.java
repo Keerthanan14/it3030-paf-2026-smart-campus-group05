@@ -1,6 +1,5 @@
 package com.smartcampus.ticket;
 
-import com.smartcampus.audit.AuditLogService;
 import com.smartcampus.exception.ForbiddenException;
 import com.smartcampus.notification.NotificationService;
 import com.smartcampus.ticket.comment.Comment;
@@ -34,8 +33,6 @@ class CommentServiceImplTest {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private AuditLogService auditLogService;
-    @Mock
     private NotificationService notificationService;
 
     private CommentServiceImpl commentService;
@@ -46,7 +43,6 @@ class CommentServiceImplTest {
                 commentRepository,
                 ticketRepository,
                 userRepository,
-                auditLogService,
                 notificationService
         );
     }

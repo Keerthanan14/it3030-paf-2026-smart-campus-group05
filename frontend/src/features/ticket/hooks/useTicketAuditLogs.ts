@@ -11,6 +11,8 @@ type AuditFilters = {
   entityType?: string;
   action?: string;
   userId?: string;
+  from?: string;
+  to?: string;
 };
 
 export function useTicketAuditLogs(options: UseTicketAuditLogsOptions = {}) {
@@ -36,6 +38,8 @@ export function useTicketAuditLogs(options: UseTicketAuditLogsOptions = {}) {
         entityType: filters.entityType,
         action: filters.action,
         userId: filters.userId,
+        from: filters.from,
+        to: filters.to,
         page,
         size,
       });
@@ -49,7 +53,7 @@ export function useTicketAuditLogs(options: UseTicketAuditLogsOptions = {}) {
     } finally {
       setLoading(false);
     }
-  }, [filters.action, filters.entityType, filters.userId, page, size]);
+  }, [filters.action, filters.entityType, filters.from, filters.to, filters.userId, page, size]);
 
   useEffect(() => {
     if (!autoLoad) return;

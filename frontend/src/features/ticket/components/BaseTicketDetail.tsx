@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { SendHorizontal } from "lucide-react";
 import { Button } from "../../../shared/components/ui/Button";
 import { Input } from "../../../shared/components/ui/Input";
-import { formatDurationLabel } from "../utils/ticketUi";
+import { formatDurationLabel, getFirstResponseSlaTone, getResolutionSlaTone, getSlaLabel, getSlaToneClass } from "../utils/ticketUi";
 import type { Ticket, TicketComment } from "../../../types/ticket";
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080").replace(/\/$/, "");
@@ -80,6 +80,7 @@ type BaseTicketDetailProps = {
   emptyMessage: string;
   ticket: Ticket | null;
   showChat?: boolean;
+  contentActionsPosition?: "before" | "after";
   detailLoading: boolean;
   detailError: string | null;
   actionError?: string | null;
@@ -108,6 +109,7 @@ export function BaseTicketDetail({
   emptyMessage,
   ticket,
   showChat = true,
+  contentActionsPosition = "after",
   detailLoading,
   detailError,
   actionError,
@@ -134,6 +136,62 @@ export function BaseTicketDetail({
   const isEditingComment = Boolean(editingCommentId);
   const activeInputValue = isEditingComment ? editingCommentValue : commentDraft;
   const canSubmitInput = Boolean(activeInputValue.trim()) && canAddComment;
+
+  const timelineItems = useMemo(() => {
+    if (!ticket) return [];
+
+    const items: Array<{ title: string; time: string; note: string; tone: "good" | "warning" | "breached" }> = [
+      {
+        title: "Created",
+        time: ticket.createdAt,
+        note: "Ticket submitted",
+        tone: "good",
+      },
+    ];
+
+    if (ticket.firstResponseAt) {
+      items.push({
+        title: "First Response",
+        time: ticket.firstResponseAt,
+        note: "First action recorded",
+        tone: getFirstResponseSlaTone(ticket),
+      });
+    } else {
+      items.push({
+        title: "First Response",
+        time: ticket.updatedAt,
+        note: "Waiting for first action",
+        tone: getFirstResponseSlaTone(ticket),
+      });
+    }
+
+    if (ticket.resolvedAt) {
+      items.push({
+        title: "Resolved",
+        time: ticket.resolvedAt,
+        note: ticket.resolutionNotes ?? "Marked as resolved",
+        tone: getResolutionSlaTone(ticket),
+      });
+    } else {
+      items.push({
+        title: "Resolution",
+        time: ticket.updatedAt,
+        note: ticket.status === "CLOSED" || ticket.status === "REJECTED" ? `Final status: ${ticket.status}` : "Waiting for resolution",
+        tone: getResolutionSlaTone(ticket),
+      });
+    }
+
+    if (ticket.status === "CLOSED" || ticket.status === "REJECTED") {
+      items.push({
+        title: ticket.status === "CLOSED" ? "Closed" : "Rejected",
+        time: ticket.updatedAt,
+        note: ticket.status === "REJECTED" ? ticket.rejectionReason ?? "Rejected by admin" : "Final closure",
+        tone: ticket.status === "REJECTED" ? "breached" : "good",
+      });
+    }
+
+    return items;
+  }, [ticket]);
 
   const handleSubmitFromInput = (): void => {
     if (!canSubmitInput) return;
@@ -195,52 +253,69 @@ export function BaseTicketDetail({
       {!ticket && !detailLoading ? <p className="text-sm text-foreground/70">{emptyMessage}</p> : null}
 
       {ticket ? (
-        <div className={`grid gap-4 ${showChat ? "lg:grid-cols-2" : "lg:grid-cols-1"} lg:items-stretch`}>
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-border/70 bg-muted/10 p-4 md:p-5">
-              <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-border/60 pb-3">
+        <div className={`grid gap-2.5 ${showChat ? "lg:grid-cols-2" : "lg:grid-cols-1"} lg:items-stretch`}>
+          <div className="space-y-3">
+            {contentActionsPosition === "before" && contentActions ? <div className="space-y-2">{contentActions}</div> : null}
+
+            <div className="rounded-2xl border border-border/70 bg-muted/10 p-3 md:p-4">
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-border/60 pb-2.5">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-foreground/60">Ticket Summary</p>
-                  <p className="text-sm text-foreground/80">Review the selected ticket details</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-foreground/60">Ticket Summary</p>
+                  <p className="text-xs text-foreground/80">Review the selected ticket details</p>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${getStatusBadgeClass(ticket.status)}`}>
                   {ticket.status}
                 </span>
               </div>
 
-              <div className="space-y-3 text-sm">
-                <div className="border-b border-border/60 pb-3">
+              <div className="space-y-2.5 text-xs">
+                <div className="border-b border-border/60 pb-2.5">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">Ticket ID</p>
-                  <p className="mt-1 break-all font-semibold">{ticket.id}</p>
+                  <p className="mt-1 break-all font-medium">{ticket.id}</p>
                 </div>
 
-                <div className="grid gap-3 border-b border-border/60 pb-3 md:grid-cols-2">
+                <div className="grid gap-2.5 border-b border-border/60 pb-2.5 md:grid-cols-2">
                   {metaFields.map((field) => (
                     <div key={field.label}>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">{field.label}</p>
-                      <p className="mt-1 font-semibold">{field.value}</p>
+                      <p className="mt-1 font-medium">{field.value}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="grid gap-3 border-b border-border/60 pb-3 md:grid-cols-2">
+                <div className="grid gap-2.5 border-b border-border/60 pb-2.5 md:grid-cols-2">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">First Response SLA</p>
-                    <p className={`mt-1 font-semibold ${ticket.firstResponseBreached ? "text-rose-700" : "text-emerald-700"}`}>
-                      {ticket.firstResponseBreached ? "Breached" : "Within SLA"} ({formatDurationLabel(ticket.timeToFirstResponse)})
+                    <p className={`mt-1 inline-flex rounded px-2 py-0.5 text-xs font-semibold ${getSlaToneClass(getFirstResponseSlaTone(ticket))}`}>
+                      {getSlaLabel(getFirstResponseSlaTone(ticket))} ({formatDurationLabel(ticket.timeToFirstResponse)})
                     </p>
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">Resolution SLA</p>
-                    <p className={`mt-1 font-semibold ${ticket.resolutionBreached ? "text-rose-700" : "text-emerald-700"}`}>
-                      {ticket.resolutionBreached ? "Breached" : "Within SLA"} ({formatDurationLabel(ticket.timeToResolution)})
+                    <p className={`mt-1 inline-flex rounded px-2 py-0.5 text-xs font-semibold ${getSlaToneClass(getResolutionSlaTone(ticket))}`}>
+                      {getSlaLabel(getResolutionSlaTone(ticket))} ({formatDurationLabel(ticket.timeToResolution)})
                     </p>
                   </div>
                 </div>
 
                 <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">Timeline</p>
+                  <div className="mt-2 space-y-1.5">
+                    {timelineItems.map((item) => (
+                      <div key={`${item.title}-${item.time}`} className="rounded-md border border-border/60 bg-background px-2.5 py-1.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-xs font-semibold">{item.title}</p>
+                          <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${getSlaToneClass(item.tone)}`}>{item.note}</span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-foreground/60">{new Date(item.time).toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">Description</p>
-                  <p className="mt-1 rounded-md bg-background px-3 py-2">{ticket.description}</p>
+                  <p className="mt-1 rounded-md bg-background px-2.5 py-1.5 text-xs">{ticket.description}</p>
                 </div>
               </div>
             </div>
@@ -270,26 +345,26 @@ export function BaseTicketDetail({
               </div>
             ) : null}
 
-            {contentActions ? <div className="space-y-2">{contentActions}</div> : null}
+            {contentActionsPosition === "after" && contentActions ? <div className="space-y-2">{contentActions}</div> : null}
           </div>
 
           {showChat ? (
-          <div className="flex h-full max-h-[52vh] min-h-0 flex-col space-y-3 overflow-hidden rounded-2xl border border-border/70 bg-[#efeae2] p-4 md:p-5">
-            <div className="flex items-start justify-between gap-3 border-b border-border/60 pb-3">
+          <div className="flex h-full max-h-[82vh] min-h-0 flex-col space-y-2.5 overflow-hidden rounded-2xl border border-border/70 bg-[#efeae2] p-3 md:p-4">
+            <div className="flex items-start justify-between gap-2 border-b border-border/60 pb-2.5">
               <div>
-                <h3 className="font-medium">Chat</h3>
-                <p className="text-xs text-foreground/65">Ticket conversation</p>
+                <h3 className="text-sm font-medium">Chat</h3>
+                <p className="text-[11px] text-foreground/65">Ticket conversation</p>
               </div>
               <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground/75">
                 {comments.length} {comments.length === 1 ? "message" : "messages"}
               </span>
             </div>
-            {!canAddComment ? <p className="text-xs text-foreground/60">{cannotCommentMessage}</p> : null}
+            {!canAddComment ? <p className="text-[11px] text-foreground/60">{cannotCommentMessage}</p> : null}
             {commentError ? <p className="text-sm text-rose-600">{commentError}</p> : null}
-            <ul ref={commentsListRef} className="scrollbar-hide min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+            <ul ref={commentsListRef} className="scrollbar-hide min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
               {groupedComments.map((group) => (
                 <Fragment key={group.key}>
-                  <li className="my-1 flex justify-center">
+                  <li className="my-0.5 flex justify-center">
                     <span className="rounded-full bg-muted px-3 py-1 text-[11px] font-medium text-foreground/70">{group.label}</span>
                   </li>
                   {group.items.map((comment) => {
@@ -304,7 +379,7 @@ export function BaseTicketDetail({
 
                     return (
                       <li key={comment.id} className={`flex w-full items-start gap-2 ${isOwn ? "justify-end" : "justify-start"}`}>
-                        <div className={`w-fit max-w-[82%] rounded-2xl border px-3 py-2 text-sm shadow-sm ${getBubbleClass(role, isOwn)}`}>
+                        <div className={`w-fit max-w-[82%] rounded-2xl border px-3 py-1.5 text-xs shadow-sm ${getBubbleClass(role, isOwn)}`}>
                           <p className="wrap-break-word whitespace-pre-wrap">{comment.content}</p>
                           <div className="mt-1 flex items-center justify-end gap-1">
                             <p className="text-[11px] text-foreground/55">
@@ -327,7 +402,7 @@ export function BaseTicketDetail({
             </ul>
 
             {isEditingComment ? (
-              <div className="flex items-center justify-between rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <div className="flex items-center justify-between rounded-md bg-amber-50 px-3 py-1.5 text-[11px] text-amber-800">
                 <span>Editing selected message</span>
                 <Button type="button" size="sm" variant="ghost" onClick={onCancelEditComment}>
                   Cancel
@@ -335,7 +410,7 @@ export function BaseTicketDetail({
               </div>
             ) : null}
 
-            <div className="sticky bottom-0 flex gap-2 rounded-lg bg-[#efeae2] p-2">
+            <div className="sticky bottom-0 flex gap-2 rounded-lg bg-[#efeae2] p-1.5">
               <Input
                 value={activeInputValue}
                 onChange={(e) => handleInputChange(e.target.value)}
@@ -346,13 +421,14 @@ export function BaseTicketDetail({
                   }
                 }}
                 placeholder={commentInputPlaceholder}
+                className="text-xs"
               />
               <Button
                 type="button"
                 onClick={handleSubmitFromInput}
                 isLoading={commentLoading}
                 disabled={!canSubmitInput}
-                className="h-10 w-10 rounded-full p-0"
+                className="h-9 w-9 rounded-full p-0"
                 aria-label={isEditingComment ? "Save edited comment" : "Send comment"}
               >
                 <SendHorizontal className="h-4 w-4" />

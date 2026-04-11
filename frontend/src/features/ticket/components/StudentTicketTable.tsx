@@ -1,6 +1,6 @@
 import { Button } from "../../../shared/components/ui/Button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../shared/components/ui/Table";
-import { formatDurationLabel } from "../utils/ticketUi";
+import { formatDurationLabel, getFirstResponseSlaTone, getResolutionSlaTone, getSlaLabel, getSlaToneClass } from "../utils/ticketUi";
 import type { Ticket } from "../../../types/ticket";
 
 type StudentTicketTableProps = {
@@ -58,11 +58,11 @@ export function StudentTicketTable({
               </TableCell>
               <TableCell>
                 <div className="space-y-1">
-                  <p className={`inline-block rounded px-2 py-0.5 text-xs ${item.firstResponseBreached ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
-                    First response: {formatDurationLabel(item.timeToFirstResponse)}
+                  <p className={`inline-block rounded px-2 py-0.5 text-xs ${getSlaToneClass(getFirstResponseSlaTone(item))}`}>
+                    {getSlaLabel(getFirstResponseSlaTone(item))}: {formatDurationLabel(item.timeToFirstResponse)}
                   </p>
-                  <p className={`inline-block rounded px-2 py-0.5 text-xs ${item.resolutionBreached ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
-                    Resolution: {formatDurationLabel(item.timeToResolution)}
+                  <p className={`inline-block rounded px-2 py-0.5 text-xs ${getSlaToneClass(getResolutionSlaTone(item))}`}>
+                    {getSlaLabel(getResolutionSlaTone(item))}: {formatDurationLabel(item.timeToResolution)}
                   </p>
                 </div>
               </TableCell>

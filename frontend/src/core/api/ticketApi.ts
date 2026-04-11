@@ -22,6 +22,8 @@ type ListAuditLogsParams = {
 	entityType?: string;
 	action?: string;
 	userId?: string;
+	from?: string;
+	to?: string;
 	page?: number;
 	size?: number;
 };
@@ -96,12 +98,14 @@ export const ticketApi = {
 		return api.delete<void>(`/tickets/${ticketId}/comments/${commentId}`);
 	},
 
-	listAuditLogs({ entityType, action, userId, page = 0, size = 20 }: ListAuditLogsParams = {}) {
+	listAuditLogs({ entityType, action, userId, from, to, page = 0, size = 20 }: ListAuditLogsParams = {}) {
 		return api.get<PaginatedAuditLogResponse>("/audit-logs", {
 			params: {
 				entityType: entityType || undefined,
 				action: action || undefined,
 				userId: userId || undefined,
+				from: from || undefined,
+				to: to || undefined,
 				page,
 				size,
 			},

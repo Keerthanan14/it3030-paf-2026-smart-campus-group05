@@ -4,6 +4,7 @@ export type NotificationType =
 	| 'BOOKING_REJECTED'
 	| 'BOOKING_CANCELLED'
 	| 'TICKET_CREATED'
+	| 'TICKET_ASSIGNED'
 	| 'TICKET_STATUS_CHANGE'
 	| 'NEW_COMMENT'
 	| string;
